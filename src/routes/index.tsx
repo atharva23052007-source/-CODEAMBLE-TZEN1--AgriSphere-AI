@@ -25,6 +25,9 @@ import {
   Globe,
   Leaf,
 } from "lucide-react";
+import farmerAvatar from "@/assets/farmer-avatar.jpg";
+import farmerIllustration from "@/assets/farmer-illustration.png";
+import soybeanImg from "@/assets/soybean.jpg";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -42,7 +45,7 @@ const nav = [
 
 const services = [
   {
-    title: "Crop Advisory",
+    title: "Crop Advice",
     desc: "Get AI based crop advisory & best practices",
     Icon: Sprout,
     tone: "green",
@@ -204,8 +207,8 @@ function Index() {
 
           {/* Help card */}
           <div className="mt-auto rounded-2xl bg-accent/60 p-4 flex gap-3">
-            <div className="size-16 shrink-0 rounded-xl bg-white border border-border flex items-center justify-center text-2xl">
-              👨‍🌾
+            <div className="size-16 shrink-0 rounded-xl bg-white border border-border flex items-center justify-center overflow-hidden">
+              <img src={farmerIllustration} alt="Farmer" className="size-full object-cover" loading="lazy" width={512} height={512} />
             </div>
             <div>
               <p className="text-sm font-semibold text-primary leading-snug">
@@ -254,8 +257,8 @@ function Index() {
             {/* Header */}
             <header className="flex items-center gap-4 justify-between flex-wrap">
               <div className="flex items-center gap-4">
-                <div className="size-14 lg:size-16 rounded-full bg-accent border border-border flex items-center justify-center text-3xl overflow-hidden">
-                  👨🏽‍🌾
+                <div className="size-14 lg:size-16 rounded-full bg-accent border border-border overflow-hidden">
+                  <img src={farmerAvatar} alt="Rajesh" className="size-full object-cover" width={512} height={512} />
                 </div>
                 <div>
                   <h2 className="text-2xl lg:text-[28px] font-bold text-primary leading-tight">
@@ -343,8 +346,8 @@ function Index() {
                   </button>
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="size-16 rounded-xl bg-tile-green flex items-center justify-center text-3xl">
-                    🌱
+                  <div className="size-16 rounded-xl bg-tile-green overflow-hidden flex items-center justify-center">
+                    <img src={soybeanImg} alt="Soybean" className="size-full object-cover" loading="lazy" width={512} height={512} />
                   </div>
                   <div>
                     <div className="text-lg font-bold">Soybean</div>
