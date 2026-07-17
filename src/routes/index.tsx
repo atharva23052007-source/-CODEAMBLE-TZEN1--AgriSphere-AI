@@ -25,6 +25,9 @@ import {
   Globe,
   Leaf,
 } from "lucide-react";
+import farmerAvatar from "@/assets/farmer-avatar.jpg";
+import farmerIllustration from "@/assets/farmer-illustration.png";
+import soybeanImg from "@/assets/soybean.jpg";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -42,7 +45,7 @@ const nav = [
 
 const services = [
   {
-    title: "Crop Advisory",
+    title: "Crop Advice",
     desc: "Get AI based crop advisory & best practices",
     Icon: Sprout,
     tone: "green",
