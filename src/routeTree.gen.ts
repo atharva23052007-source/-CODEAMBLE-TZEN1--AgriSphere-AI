@@ -9,38 +9,174 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as OperatorRouteImport } from './routes/operator'
+import { Route as OfficerRouteImport } from './routes/officer'
+import { Route as FarmerRouteImport } from './routes/farmer'
+import { Route as BuyerRouteImport } from './routes/buyer'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LoginOperatorRouteImport } from './routes/login/operator'
+import { Route as LoginOfficerRouteImport } from './routes/login/officer'
+import { Route as LoginFarmerRouteImport } from './routes/login/farmer'
+import { Route as LoginBuyerRouteImport } from './routes/login/buyer'
 
+const OperatorRoute = OperatorRouteImport.update({
+  id: '/operator',
+  path: '/operator',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OfficerRoute = OfficerRouteImport.update({
+  id: '/officer',
+  path: '/officer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FarmerRoute = FarmerRouteImport.update({
+  id: '/farmer',
+  path: '/farmer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuyerRoute = BuyerRouteImport.update({
+  id: '/buyer',
+  path: '/buyer',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginOperatorRoute = LoginOperatorRouteImport.update({
+  id: '/login/operator',
+  path: '/login/operator',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginOfficerRoute = LoginOfficerRouteImport.update({
+  id: '/login/officer',
+  path: '/login/officer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginFarmerRoute = LoginFarmerRouteImport.update({
+  id: '/login/farmer',
+  path: '/login/farmer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginBuyerRoute = LoginBuyerRouteImport.update({
+  id: '/login/buyer',
+  path: '/login/buyer',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/buyer': typeof BuyerRoute
+  '/farmer': typeof FarmerRoute
+  '/officer': typeof OfficerRoute
+  '/operator': typeof OperatorRoute
+  '/login/buyer': typeof LoginBuyerRoute
+  '/login/farmer': typeof LoginFarmerRoute
+  '/login/officer': typeof LoginOfficerRoute
+  '/login/operator': typeof LoginOperatorRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/buyer': typeof BuyerRoute
+  '/farmer': typeof FarmerRoute
+  '/officer': typeof OfficerRoute
+  '/operator': typeof OperatorRoute
+  '/login/buyer': typeof LoginBuyerRoute
+  '/login/farmer': typeof LoginFarmerRoute
+  '/login/officer': typeof LoginOfficerRoute
+  '/login/operator': typeof LoginOperatorRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/buyer': typeof BuyerRoute
+  '/farmer': typeof FarmerRoute
+  '/officer': typeof OfficerRoute
+  '/operator': typeof OperatorRoute
+  '/login/buyer': typeof LoginBuyerRoute
+  '/login/farmer': typeof LoginFarmerRoute
+  '/login/officer': typeof LoginOfficerRoute
+  '/login/operator': typeof LoginOperatorRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/buyer'
+    | '/farmer'
+    | '/officer'
+    | '/operator'
+    | '/login/buyer'
+    | '/login/farmer'
+    | '/login/officer'
+    | '/login/operator'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/buyer'
+    | '/farmer'
+    | '/officer'
+    | '/operator'
+    | '/login/buyer'
+    | '/login/farmer'
+    | '/login/officer'
+    | '/login/operator'
+  id:
+    | '__root__'
+    | '/'
+    | '/buyer'
+    | '/farmer'
+    | '/officer'
+    | '/operator'
+    | '/login/buyer'
+    | '/login/farmer'
+    | '/login/officer'
+    | '/login/operator'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BuyerRoute: typeof BuyerRoute
+  FarmerRoute: typeof FarmerRoute
+  OfficerRoute: typeof OfficerRoute
+  OperatorRoute: typeof OperatorRoute
+  LoginBuyerRoute: typeof LoginBuyerRoute
+  LoginFarmerRoute: typeof LoginFarmerRoute
+  LoginOfficerRoute: typeof LoginOfficerRoute
+  LoginOperatorRoute: typeof LoginOperatorRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/operator': {
+      id: '/operator'
+      path: '/operator'
+      fullPath: '/operator'
+      preLoaderRoute: typeof OperatorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/officer': {
+      id: '/officer'
+      path: '/officer'
+      fullPath: '/officer'
+      preLoaderRoute: typeof OfficerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/farmer': {
+      id: '/farmer'
+      path: '/farmer'
+      fullPath: '/farmer'
+      preLoaderRoute: typeof FarmerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/buyer': {
+      id: '/buyer'
+      path: '/buyer'
+      fullPath: '/buyer'
+      preLoaderRoute: typeof BuyerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,12 +184,58 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login/operator': {
+      id: '/login/operator'
+      path: '/login/operator'
+      fullPath: '/login/operator'
+      preLoaderRoute: typeof LoginOperatorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login/officer': {
+      id: '/login/officer'
+      path: '/login/officer'
+      fullPath: '/login/officer'
+      preLoaderRoute: typeof LoginOfficerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login/farmer': {
+      id: '/login/farmer'
+      path: '/login/farmer'
+      fullPath: '/login/farmer'
+      preLoaderRoute: typeof LoginFarmerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login/buyer': {
+      id: '/login/buyer'
+      path: '/login/buyer'
+      fullPath: '/login/buyer'
+      preLoaderRoute: typeof LoginBuyerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BuyerRoute: BuyerRoute,
+  FarmerRoute: FarmerRoute,
+  OfficerRoute: OfficerRoute,
+  OperatorRoute: OperatorRoute,
+  LoginBuyerRoute: LoginBuyerRoute,
+  LoginFarmerRoute: LoginFarmerRoute,
+  LoginOfficerRoute: LoginOfficerRoute,
+  LoginOperatorRoute: LoginOperatorRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
