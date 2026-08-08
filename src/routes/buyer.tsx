@@ -41,6 +41,8 @@ function BuyerDashboard() {
   
   const [depositInput, setDepositInput] = useState("");
   const [loadingDeposit, setLoadingDeposit] = useState(false);
+  const [processingActionId, setProcessingActionId] = useState<string | null>(null);
+  const [isSubmittingListing, setIsSubmittingListing] = useState(false);
 
   // Seller Listing Form State
   const [newListing, setNewListing] = useState({
@@ -78,9 +80,11 @@ function BuyerDashboard() {
   );
 
   // ---- TRADER ACTIONS ----
-  const handleBuy = (id: string, crop: string, qty: string) => {
+  const handleBuy = async (id: string, crop: string, qty: string) => {
+    if (processingActionId) return;
+    setProcessingActionId(id);
     try {
-      buyListing(id, TRADER_ID);
+      await buyListing(id, TRADER_ID);
       toast.success(`Procurement Contract Secured!`, {
         description: `Escrow funded for ${qty} of ${crop}. FPO agent notified.`,
       });
@@ -89,18 +93,27 @@ function BuyerDashboard() {
         description: "Please deposit funds first.",
       });
       setTraderTab("escrow");
+    } finally {
+      setProcessingActionId(null);
     }
   };
 
-  const handleReleasePayment = (id: string) => {
-    releaseEscrow(id, TRADER_ID);
-    toast.success(`Funds Disbursed to FPO!`, {
-      description: `Payment has been securely transferred. Transaction complete.`,
-    });
+  const handleReleasePayment = async (id: string) => {
+    if (processingActionId) return;
+    setProcessingActionId(id);
+    try {
+      await releaseEscrow(id, TRADER_ID);
+      toast.success(`Funds Disbursed to FPO!`, {
+        description: `Payment has been securely transferred. Transaction complete.`,
+      });
+    } finally {
+      setProcessingActionId(null);
+    }
   };
 
-  const handleDepositSubmit = (e: React.FormEvent) => {
+  const handleDepositSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loadingDeposit) return;
     const cleanAmt = parseInt(depositInput.replace(/\D/g, ""));
     if (isNaN(cleanAmt) || cleanAmt <= 0) {
       toast.error("Please enter a valid deposit amount.");
@@ -108,36 +121,59 @@ function BuyerDashboard() {
     }
 
     setLoadingDeposit(true);
-    setTimeout(() => {
-      setLoadingDeposit(false);
-      deposit(TRADER_ID, cleanAmt);
+    try {
+      await deposit(TRADER_ID, cleanAmt);
       toast.success("Deposit Approved!", {
         description: `₹${cleanAmt.toLocaleString()} credited successfully to your AgriSphere trading wallet.`,
       });
       setDepositInput("");
-    }, 1500);
+    } finally {
+      setLoadingDeposit(false);
+    }
   };
 
   // ---- SELLER ACTIONS ----
-  const handleCreateListing = (e: React.FormEvent) => {
+  const handleCreateListing = async (e: React.FormEvent) => {
     e.preventDefault();
-    addListing({
-      ...newListing,
-      fpo: "Satara Farmers Coop",
-      sellerId: SELLER_ID,
-    });
-    toast.success("Harvest Listing Published!");
-    setNewListing({ crop: "", qty: "", price: "", cert: "", location: "" });
+    if (isSubmittingListing) return;
+    if (!newListing.crop.trim()) {
+      toast.error("Please enter a crop type.");
+      return;
+    }
+    setIsSubmittingListing(true);
+    try {
+      await addListing({
+        ...newListing,
+        fpo: "Satara Farmers Coop",
+        sellerId: SELLER_ID,
+      });
+      toast.success("Harvest Listing Published!");
+      setNewListing({ crop: "", qty: "", price: "", cert: "", location: "" });
+    } finally {
+      setIsSubmittingListing(false);
+    }
   };
 
-  const handleAcceptContract = (id: string) => {
-    acceptContract(id, SELLER_ID);
-    toast.success("Contract Accepted", { description: "You can now dispatch the shipment." });
+  const handleAcceptContract = async (id: string) => {
+    if (processingActionId) return;
+    setProcessingActionId(id);
+    try {
+      await acceptContract(id, SELLER_ID);
+      toast.success("Contract Accepted", { description: "You can now dispatch the shipment." });
+    } finally {
+      setProcessingActionId(null);
+    }
   };
 
-  const handleUpdateShipment = (id: string, newStatus: ContractStatus) => {
-    updateShipment(id, SELLER_ID, newStatus);
-    toast.success(`Shipment updated to ${newStatus}`);
+  const handleUpdateShipment = async (id: string, newStatus: ContractStatus) => {
+    if (processingActionId) return;
+    setProcessingActionId(id);
+    try {
+      await updateShipment(id, SELLER_ID, newStatus);
+      toast.success(`Shipment updated to ${newStatus}`);
+    } finally {
+      setProcessingActionId(null);
+    }
   };
 
   const handleLogout = () => {
@@ -341,8 +377,8 @@ function BuyerDashboard() {
               <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-0.5">Active Consignments</span>
               <div className="text-2xl font-extrabold text-foreground">
                 {currentRole === 'trader' 
-                  ? traderContracts.filter(c => c.status === "In Transit" || c.status === "Dispatched").length
-                  : sellerContracts.filter(c => c.status === "In Transit" || c.status === "Dispatched").length} Consignments
+                  ? traderContracts.filter(c => c.status !== "Delivered & Settled").length
+                  : sellerContracts.filter(c => c.status !== "Delivered & Settled").length} Consignments
               </div>
             </div>
             <div className="size-10 rounded-xl bg-tile-blue flex items-center justify-center text-tile-blue-icon">
@@ -402,10 +438,13 @@ function BuyerDashboard() {
                               <td className="text-right">
                                 {l.status === "Available" ? (
                                   <button
+                                    disabled={processingActionId === l.id}
                                     onClick={() => handleBuy(l.id, l.crop, l.qty)}
-                                    className="px-2.5 py-1 text-[10px] font-bold text-white bg-tile-amber-icon rounded-md hover:bg-tile-amber-icon/90 transition shadow-sm hover:scale-103 cursor-pointer"
+                                    className={`px-2.5 py-1 text-[10px] font-bold text-white bg-tile-amber-icon rounded-md transition shadow-sm cursor-pointer ${
+                                      processingActionId === l.id ? "opacity-50 cursor-not-allowed" : "hover:bg-tile-amber-icon/90 hover:scale-103"
+                                    }`}
                                   >
-                                    Fund Escrow
+                                    {processingActionId === l.id ? "Funding..." : "Fund Escrow"}
                                   </button>
                                 ) : (
                                   <span className="inline-flex items-center gap-1 text-[10px] text-primary font-bold uppercase">
@@ -503,10 +542,13 @@ function BuyerDashboard() {
                         <div className="flex items-center justify-between border-t border-border pt-3">
                           {c.status === "In Transit" || c.status === "Dispatched" ? (
                             <button
+                              disabled={processingActionId === c.id}
                               onClick={() => handleReleasePayment(c.id)}
-                              className="px-3.5 py-1.5 text-xs font-bold bg-primary text-white rounded-xl hover:bg-primary/95 transition shadow-sm cursor-pointer ml-auto"
+                              className={`px-3.5 py-1.5 text-xs font-bold bg-primary text-white rounded-xl transition shadow-sm cursor-pointer ml-auto ${
+                                processingActionId === c.id ? "opacity-50 cursor-not-allowed" : "hover:bg-primary/95"
+                              }`}
                             >
-                              Mark Delivered & Release Escrow
+                              {processingActionId === c.id ? "Processing..." : "Mark Delivered & Release Escrow"}
                             </button>
                           ) : c.status === "Delivered & Settled" ? (
                             <span className="text-[10px] text-green-700 font-bold flex items-center gap-1 ml-auto">
@@ -624,8 +666,14 @@ function BuyerDashboard() {
                         <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Pickup Location</label>
                         <input required type="text" className="w-full px-3 py-2 border border-border rounded-xl text-xs bg-white" placeholder="e.g. Satara Warehouse" value={newListing.location} onChange={e => setNewListing({...newListing, location: e.target.value})} />
                       </div>
-                      <button type="submit" className="w-full h-10 bg-tile-green text-tile-green-icon hover:bg-tile-green/80 text-xs font-bold rounded-xl transition shadow-sm cursor-pointer">
-                        Publish to Wholesale Catalog
+                      <button
+                        type="submit"
+                        disabled={isSubmittingListing}
+                        className={`w-full h-10 bg-tile-green text-tile-green-icon text-xs font-bold rounded-xl transition shadow-sm cursor-pointer ${
+                          isSubmittingListing ? "opacity-50 cursor-not-allowed" : "hover:bg-tile-green/80"
+                        }`}
+                      >
+                        {isSubmittingListing ? "Publishing..." : "Publish to Wholesale Catalog"}
                       </button>
                     </form>
                   </div>
@@ -692,18 +740,36 @@ function BuyerDashboard() {
 
                         <div className="flex items-center justify-end gap-2 border-t border-border pt-3">
                           {c.status === "Escrow Locked" && (
-                            <button onClick={() => handleAcceptContract(c.id)} className="px-3 py-1.5 text-xs font-bold bg-primary text-white rounded-xl hover:bg-primary/95 cursor-pointer">
-                              Accept & Prepare
+                            <button
+                              disabled={processingActionId === c.id}
+                              onClick={() => handleAcceptContract(c.id)}
+                              className={`px-3 py-1.5 text-xs font-bold bg-primary text-white rounded-xl cursor-pointer ${
+                                processingActionId === c.id ? "opacity-50 cursor-not-allowed" : "hover:bg-primary/95"
+                              }`}
+                            >
+                              {processingActionId === c.id ? "Accepting..." : "Accept & Prepare"}
                             </button>
                           )}
                           {c.status === "Seller Accepts" && (
-                            <button onClick={() => handleUpdateShipment(c.id, "Dispatched")} className="px-3 py-1.5 text-xs font-bold bg-tile-amber text-tile-amber-icon rounded-xl cursor-pointer">
-                              Mark Dispatched
+                            <button
+                              disabled={processingActionId === c.id}
+                              onClick={() => handleUpdateShipment(c.id, "Dispatched")}
+                              className={`px-3 py-1.5 text-xs font-bold bg-tile-amber text-tile-amber-icon rounded-xl cursor-pointer ${
+                                processingActionId === c.id ? "opacity-50 cursor-not-allowed" : "hover:bg-tile-amber/80"
+                              }`}
+                            >
+                              {processingActionId === c.id ? "Updating..." : "Mark Dispatched"}
                             </button>
                           )}
                           {c.status === "Dispatched" && (
-                            <button onClick={() => handleUpdateShipment(c.id, "In Transit")} className="px-3 py-1.5 text-xs font-bold bg-tile-blue text-tile-blue-icon rounded-xl cursor-pointer">
-                              Mark In Transit
+                            <button
+                              disabled={processingActionId === c.id}
+                              onClick={() => handleUpdateShipment(c.id, "In Transit")}
+                              className={`px-3 py-1.5 text-xs font-bold bg-tile-blue text-tile-blue-icon rounded-xl cursor-pointer ${
+                                processingActionId === c.id ? "opacity-50 cursor-not-allowed" : "hover:bg-tile-blue/80"
+                              }`}
+                            >
+                              {processingActionId === c.id ? "Updating..." : "Mark In Transit"}
                             </button>
                           )}
                           {(c.status === "In Transit" || c.status === "Delivered & Settled") && (
