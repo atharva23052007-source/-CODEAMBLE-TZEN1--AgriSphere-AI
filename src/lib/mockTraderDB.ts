@@ -68,7 +68,10 @@ class MockTraderDB {
   private state: DBState;
 
   constructor() {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    let saved = null;
+    if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+      saved = localStorage.getItem(STORAGE_KEY);
+    }
     if (saved) {
       try {
         this.state = JSON.parse(saved);
@@ -82,8 +85,10 @@ class MockTraderDB {
   }
 
   private save() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
-    window.dispatchEvent(new Event("trader-db-updated"));
+    if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+      window.dispatchEvent(new Event("trader-db-updated"));
+    }
   }
 
   getState() {
