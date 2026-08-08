@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import multer from "multer";
 import dotenv from "dotenv";
+import { HfInference } from "@huggingface/inference";
 import { getCache, setCache, isRedisConnected } from "./redis.js";
 
 dotenv.config();
@@ -228,6 +229,54 @@ async function processVoiceWithGemini(audioBuffer, mimeType = "audio/webm", hist
 }
 
 /**
+ * Call Hugging Face Serverless AI API (Primary / Fallback AI Provider)
+ */
+async function queryHuggingFaceApi(prompt, systemInstruction = "") {
+  dotenv.config();
+  const token = (process.env.HUGGINGFACE_TOKEN || process.env.HF_TOKEN || "").trim();
+
+  if (!token) {
+    return null;
+  }
+
+  const models = [
+    "Qwen/Qwen2.5-Coder-32B-Instruct",
+    "Qwen/Qwen2.5-72B-Instruct",
+    "meta-llama/Llama-3.2-3B-Instruct",
+    "mistralai/Mistral-7B-Instruct-v0.3",
+    "google/gemma-2-9b-it"
+  ];
+
+  const hf = new HfInference(token);
+
+  for (const model of models) {
+    try {
+      const messages = [];
+      if (systemInstruction) {
+        messages.push({ role: "system", content: systemInstruction });
+      }
+      messages.push({ role: "user", content: prompt });
+
+      const res = await hf.chatCompletion({
+        model,
+        messages,
+        max_tokens: 800
+      });
+
+      const text = res.choices?.[0]?.message?.content;
+      if (text && text.trim()) {
+        console.log(`[Hugging Face AI Success] Model '${model}' generated response.`);
+        return text.trim();
+      }
+    } catch (err) {
+      console.warn(`[Hugging Face AI Warning] Model '${model}':`, err.message);
+    }
+  }
+
+  return null;
+}
+
+/**
  * Handle Text Chat Queries
  */
 async function processTextQuery(userText) {
@@ -241,12 +290,32 @@ async function processTextQuery(userText) {
     "Always answer in the SAME language as the user's question.\n" +
     "Give detailed, practical, crop-specific, farmer-friendly advice.";
 
-  const geminiResult = await queryGeminiApi(userText, sysInstruction);
+  let answerText = null;
+
+  // 1. Try Hugging Face Serverless Inference AI first
+  try {
+    answerText = await queryHuggingFaceApi(userText, sysInstruction);
+  } catch (hfErr) {
+    console.warn("[HF Query Exception]:", hfErr.message);
+  }
+
+  // 2. Fallback to Google Gemini AI if needed
+  if (!answerText) {
+    try {
+      answerText = await queryGeminiApi(userText, sysInstruction);
+    } catch (geminiErr) {
+      console.warn("[Gemini Query Exception]:", geminiErr.message);
+    }
+  }
+
+  if (!answerText) {
+    throw new Error("Both Hugging Face AI and Google Gemini AI services were unable to generate a response. Please check your API tokens in .env.");
+  }
 
   return {
     transcription: userText,
     language: userLang,
-    answer: geminiResult
+    answer: answerText
   };
 }
 
