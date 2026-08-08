@@ -40,6 +40,20 @@ import {
   ExternalLink,
   CheckCircle2,
   Calculator,
+  Tractor,
+  FlaskConical,
+  Droplet,
+  ShoppingBag,
+  CreditCard,
+  Sun,
+  ShieldAlert,
+  Layers,
+  ArrowRight,
+  Zap,
+  RefreshCw,
+  Scale,
+  Building2,
+  Coins
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -1108,19 +1122,33 @@ function ServicesView({ selectedService, setSelectedService, mounted }: { select
   const [advice, setAdvice] = useState<string | null>(null);
   const [adviceLoading, setAdviceLoading] = useState(false);
 
-  const [mandi, setMandi] = useState("Latur");
-  const [mandiCrop, setMandiCrop] = useState("Soybean");
+  // Specialized Services Hub State
+  const [activeTool, setActiveTool] = useState<string | null>(null);
 
-  const [land, setLand] = useState("");
-  const [income, setIncome] = useState("");
-  const [schemeState, setSchemeState] = useState("Maharashtra");
-  const [eligible, setEligible] = useState<any>(null);
+  // 1. Soil Calculator State
+  const [soilAcres, setSoilAcres] = useState("2");
+  const [soilCrop, setSoilCrop] = useState("Soybean");
+  const [soilResult, setSoilResult] = useState<any>(null);
 
-  const [insSurvey, setInsSurvey] = useState("");
-  const [insCover, setInsCover] = useState("");
-  const [insFileUploaded, setInsFileUploaded] = useState(false);
-  const [insProgress, setInsProgress] = useState<number | null>(null);
-  const [insResult, setInsResult] = useState<any>(null);
+  // 2. Drip Calculator State
+  const [dripAcres, setDripAcres] = useState("3");
+  const [dripCrop, setDripCrop] = useState("Sugarcane");
+  const [dripResult, setDripResult] = useState<any>(null);
+
+  // 3. Machinery Booking State
+  const [machineryType, setMachineryType] = useState("Combine Harvester");
+  const [machineryHours, setMachineryHours] = useState("4");
+  const [machineryBooked, setMachineryBooked] = useState(false);
+
+  // 4. Direct Buyer Listing State
+  const [listingCrop, setListingCrop] = useState("Soybean");
+  const [listingQty, setListingQty] = useState("50");
+  const [listingPrice, setListingPrice] = useState("4900");
+  const [listingSuccess, setListingSuccess] = useState(false);
+
+  // 5. KCC Calculator State
+  const [kccAmount, setKccAmount] = useState("100000");
+  const [kccResult, setKccResult] = useState<any>(null);
 
   const handleAdvice = (e: any) => {
     e.preventDefault();
@@ -1136,62 +1164,537 @@ function ServicesView({ selectedService, setSelectedService, mounted }: { select
     }, 905);
   };
 
-  const handleSchemes = (e: any) => {
+  const calculateSoilFertilizer = (e: any) => {
     e.preventDefault();
-    if (!land || isNaN(Number(land)) || Number(land) <= 0) {
-      toast.error("Please enter a valid farm land size (in acres)");
-      return;
-    }
-    setEligible({
-      pmKisan: Number(land) <= 5 ? "Eligible (₹6,000 yearly verified under Satara smallholder status)" : "Ineligible (Exceeds size limits)",
-      falybima: "Eligible (Subsidy coverage: 98% premium paid by Gov)"
-    });
-    toast.success("Scheme verification completed!");
-  };
-
-  const handleInsurance = (e: any) => {
-    e.preventDefault();
-    if (!insSurvey || !insCover) {
-      toast.error("Please enter survey number and desired coverage amount");
-      return;
-    }
-    if (!insFileUploaded) {
-      toast.error("Please upload land document (7/12 Extract) before applying");
-      return;
-    }
-    setInsResult({ policyNo: `PMFBY-${Date.now().toString().slice(-6)}`, premium: Number(insCover) * 0.02 });
-    toast.success("Subsidized Crop Insurance successfully activated!");
-  };
-
-  const triggerUpload = () => {
-    setInsProgress(0);
-    const interval = setInterval(() => {
-      setInsProgress(p => {
-        if (p === null) return null;
-        if (p >= 100) {
-          clearInterval(interval);
-          setInsFileUploaded(true);
-          toast.success("7/12 land extract successfully uploaded and verified!");
-          return null;
-        }
-        return p + 25;
+    const acres = Number(soilAcres) || 1;
+    if (soilCrop === "Soybean") {
+      setSoilResult({
+        urea: (acres * 0.85).toFixed(1),
+        dap: (acres * 1.3).toFixed(1),
+        mop: (acres * 0.65).toFixed(1),
+        bio: "Rhizobium + PSB Liquid Culture (500 ml/acre)",
+        compost: `${acres * 2} Tons FYM / Organic Compost`
       });
-    }, 150);
+    } else if (soilCrop === "Sugarcane") {
+      setSoilResult({
+        urea: (acres * 4.5).toFixed(1),
+        dap: (acres * 2.5).toFixed(1),
+        mop: (acres * 2.2).toFixed(1),
+        bio: "Acetobacter + PSB Culture (1 Litre/acre)",
+        compost: `${acres * 5} Tons Pressmud / FYM`
+      });
+    } else if (soilCrop === "Cotton") {
+      setSoilResult({
+        urea: (acres * 2.1).toFixed(1),
+        dap: (acres * 1.5).toFixed(1),
+        mop: (acres * 1.0).toFixed(1),
+        bio: "Azotobacter + Micro-nutrient Spray (250g/acre)",
+        compost: `${acres * 3} Tons FYM Compost`
+      });
+    } else {
+      setSoilResult({
+        urea: (acres * 2.0).toFixed(1),
+        dap: (acres * 1.2).toFixed(1),
+        mop: (acres * 0.8).toFixed(1),
+        bio: "Azospirillum + ZSB Culture",
+        compost: `${acres * 2.5} Tons Organic Compost`
+      });
+    }
+    toast.success("Soil N-P-K dosage calculated!");
+  };
+
+  const calculateDrip = (e: any) => {
+    e.preventDefault();
+    const acres = Number(dripAcres) || 1;
+    const lineMeters = acres * 4000;
+    const totalCost = acres * 45000;
+    const govtSubsidy = totalCost * 0.80;
+    const farmerShare = totalCost * 0.20;
+
+    setDripResult({
+      lineMeters: lineMeters.toLocaleString(),
+      pumpHp: acres <= 3 ? "3 HP" : acres <= 7 ? "5 HP" : "7.5 HP",
+      dischargeRate: `${acres * 1200} Litres / Hour`,
+      totalCost: `₹${totalCost.toLocaleString()}`,
+      govtSubsidy: `₹${govtSubsidy.toLocaleString()} (80% PMKSY Subsidy)`,
+      farmerShare: `₹${farmerShare.toLocaleString()}`
+    });
+    toast.success("Drip micro-irrigation estimate compiled!");
+  };
+
+  const calculateKcc = (e: any) => {
+    e.preventDefault();
+    const amt = Number(kccAmount) || 100000;
+    const promptSubsidy = amt * 0.03;
+    const netInterest = amt * 0.04;
+    setKccResult({
+      amount: `₹${amt.toLocaleString()}`,
+      baseRate: "7% p.a.",
+      subvention: `-3% (Govt Prompt Repayment Rebate)`,
+      effectiveRate: "4% Net Interest Rate",
+      annualInterest: `₹${netInterest.toLocaleString()}`,
+      saved: `₹${promptSubsidy.toLocaleString()}`
+    });
+    toast.success("KCC Loan subvention calculated!");
+  };
+
+  const handleMachineryBook = (e: any) => {
+    e.preventDefault();
+    setMachineryBooked(true);
+    toast.success(`Booking request submitted for ${machineryType}! Custom Hiring Center representative will contact you.`);
+  };
+
+  const handleProduceListing = (e: any) => {
+    e.preventDefault();
+    setListingSuccess(true);
+    toast.success(`Listed ${listingQty} Quintals of ${listingCrop} at ₹${listingPrice}/Qtl on Direct FPO Buyer Portal!`);
   };
 
   if (!selectedService) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-2 w-full">
-        {[{ id: "crop-advice", title: "Crop Advice", desc: "Get AI based crop advisory" },
-           { id: "market-prices", title: "Market Prices", desc: "Check regional mandi trends" },
-           { id: "gov-schemes", title: "Gov Schemes", desc: "Eligibility checker Tool" },
-           { id: "insurance", title: "Insurance", desc: "Subsidized crop insurance" }].map(s => (
-          <button key={s.id} onClick={() => setSelectedService(s.id)} className="text-left bg-card hover:bg-secondary/40 border border-border p-5 rounded-2xl shadow-sm transition">
-            <h4 className="font-bold text-primary text-base">{s.title}</h4>
-            <p className="text-xs text-muted-foreground mt-1">{s.desc}</p>
-            <span className="inline-block mt-3 text-xs font-semibold text-primary">Open Tool →</span>
-          </button>
-        ))}
+      <div className="flex flex-col gap-6 w-full animate-fade-in">
+        {/* Header */}
+        <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-primary font-bold text-lg lg:text-xl">
+              <LayoutGrid className="size-6 text-primary" />
+              <span>Agricultural & Financial Services Hub</span>
+            </div>
+            <p className="text-xs lg:text-sm text-muted-foreground mt-1">
+              Specialized tools, calculators, equipment rentals, soil diagnostics, and direct buyer access for farmers.
+            </p>
+          </div>
+          <span className="px-3 py-1 bg-accent text-primary text-xs font-bold rounded-full border border-primary/20 shrink-0">
+            8 Specialized Farmer Services Active
+          </span>
+        </div>
+
+        {/* Services Directory */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5">
+          {/* Service 1: Soil NPK */}
+          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+            <div>
+              <div className="size-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-3">
+                <FlaskConical className="size-6" />
+              </div>
+              <h4 className="font-bold text-foreground text-base">Soil N-P-K Health Check</h4>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                Input land size & soil test values to get bag-level Urea, DAP & MOP dosage.
+              </p>
+            </div>
+            <button
+              onClick={() => setActiveTool(activeTool === "soil" ? null : "soil")}
+              className="mt-4 w-full h-10 bg-primary/10 hover:bg-primary text-primary hover:text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Calculator className="size-3.5" />
+              {activeTool === "soil" ? "Close Calculator" : "Open N-P-K Calculator"}
+            </button>
+          </div>
+
+          {/* Service 2: Machinery SMAM */}
+          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+            <div>
+              <div className="size-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center mb-3">
+                <Tractor className="size-6" />
+              </div>
+              <h4 className="font-bold text-foreground text-base">Custom Hiring & Drone Hub</h4>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                Book subsidized tractors, harvesters & spray drones under SMAM (50%-80% subsidy).
+              </p>
+            </div>
+            <button
+              onClick={() => setActiveTool(activeTool === "machinery" ? null : "machinery")}
+              className="mt-4 w-full h-10 bg-primary/10 hover:bg-primary text-primary hover:text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Tractor className="size-3.5" />
+              {activeTool === "machinery" ? "Close Rental Portal" : "Book Equipment / Drone"}
+            </button>
+          </div>
+
+          {/* Service 3: Smart Drip */}
+          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+            <div>
+              <div className="size-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center mb-3">
+                <Droplet className="size-6" />
+              </div>
+              <h4 className="font-bold text-foreground text-base">Smart Drip Irrigation</h4>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                Calculate lateral tubing, pump HP & PMKSY 80% Micro-Irrigation subsidy savings.
+              </p>
+            </div>
+            <button
+              onClick={() => setActiveTool(activeTool === "drip" ? null : "drip")}
+              className="mt-4 w-full h-10 bg-primary/10 hover:bg-primary text-primary hover:text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Droplets className="size-3.5" />
+              {activeTool === "drip" ? "Close Calculator" : "Calculate Drip & Subsidy"}
+            </button>
+          </div>
+
+          {/* Service 4: Direct Buyer Listing */}
+          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+            <div>
+              <div className="size-12 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center mb-3">
+                <ShoppingBag className="size-6" />
+              </div>
+              <h4 className="font-bold text-foreground text-base">Direct FPO & Buyer Portal</h4>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                List produce directly to verified millers & FPOs without middleman commission.
+              </p>
+            </div>
+            <button
+              onClick={() => setActiveTool(activeTool === "buyer" ? null : "buyer")}
+              className="mt-4 w-full h-10 bg-primary/10 hover:bg-primary text-primary hover:text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Building2 className="size-3.5" />
+              {activeTool === "buyer" ? "Close Marketplace" : "List Produce for Buyers"}
+            </button>
+          </div>
+
+          {/* Service 5: KCC Loan Calculator */}
+          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+            <div>
+              <div className="size-12 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center mb-3">
+                <CreditCard className="size-6" />
+              </div>
+              <h4 className="font-bold text-foreground text-base">KCC 4% Interest Helper</h4>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                Calculate Kisan Credit Card micro-loans with 3% prompt repayment subvention.
+              </p>
+            </div>
+            <button
+              onClick={() => setActiveTool(activeTool === "kcc" ? null : "kcc")}
+              className="mt-4 w-full h-10 bg-primary/10 hover:bg-primary text-primary hover:text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Coins className="size-3.5" />
+              {activeTool === "kcc" ? "Close Calculator" : "Calculate KCC Loan"}
+            </button>
+          </div>
+
+          {/* Service 6: Organic PKVY Guide */}
+          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+            <div>
+              <div className="size-12 rounded-xl bg-lime-100 text-lime-800 flex items-center justify-center mb-3">
+                <Leaf className="size-6" />
+              </div>
+              <h4 className="font-bold text-foreground text-base">Organic Farming & PKVY</h4>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                Access Jeevamrut bio-recipes, soil organic carbon guide & cluster certification.
+              </p>
+            </div>
+            <button
+              onClick={() => setActiveTool(activeTool === "organic" ? null : "organic")}
+              className="mt-4 w-full h-10 bg-primary/10 hover:bg-primary text-primary hover:text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Sprout className="size-3.5" />
+              {activeTool === "organic" ? "Close Guide" : "View Organic Recipes"}
+            </button>
+          </div>
+
+          {/* Service 7: PM-KUSUM Solar Pump */}
+          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+            <div>
+              <div className="size-12 rounded-xl bg-orange-100 text-orange-700 flex items-center justify-center mb-3">
+                <Sun className="size-6" />
+              </div>
+              <h4 className="font-bold text-foreground text-base">PM-KUSUM Solar Pump</h4>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                Check 90% government subsidy eligibility for 3HP, 5HP & 7.5HP solar pumps.
+              </p>
+            </div>
+            <button
+              onClick={() => setActiveTool(activeTool === "solar" ? null : "solar")}
+              className="mt-4 w-full h-10 bg-primary/10 hover:bg-primary text-primary hover:text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Zap className="size-3.5" />
+              {activeTool === "solar" ? "Close Checker" : "Check Solar Subsidy"}
+            </button>
+          </div>
+
+          {/* Service 8: Weather Alert Subscription */}
+          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+            <div>
+              <div className="size-12 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center mb-3">
+                <CloudRain className="size-6" />
+              </div>
+              <h4 className="font-bold text-foreground text-base">Micro-Climate Alerts</h4>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                Subscribe to instant SMS/WhatsApp alerts for unseasonal rain, frost & hail.
+              </p>
+            </div>
+            <button
+              onClick={() => toast.success("Subscribed to Satara Regional Farm Weather Risk SMS Alerts!")}
+              className="mt-4 w-full h-10 bg-primary/10 hover:bg-primary text-primary hover:text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Bell className="size-3.5" />
+              Subscribe SMS Alerts
+            </button>
+          </div>
+        </div>
+
+        {/* Interactive Tool Containers */}
+        {activeTool === "soil" && (
+          <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm animate-fade-in max-w-2xl mx-auto w-full mt-2">
+            <div className="flex items-center gap-2 mb-4 border-b border-border pb-3">
+              <FlaskConical className="size-5 text-emerald-600" />
+              <h3 className="text-base lg:text-lg font-bold text-primary">Soil N-P-K Dosage & Nutrient Calculator</h3>
+            </div>
+            <form onSubmit={calculateSoilFertilizer} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">Land Size (Acres)</label>
+                <input type="number" min="0.5" step="0.5" className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" value={soilAcres} onChange={e=>setSoilAcres(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">Select Target Crop</label>
+                <select className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" value={soilCrop} onChange={e=>setSoilCrop(e.target.value)}>
+                  <option value="Soybean">Soybean</option>
+                  <option value="Sugarcane">Sugarcane</option>
+                  <option value="Cotton">Cotton</option>
+                  <option value="Wheat">Wheat</option>
+                </select>
+              </div>
+              <div className="sm:col-span-2">
+                <button type="submit" className="w-full h-11 bg-primary text-primary-foreground font-semibold rounded-xl text-sm hover:bg-primary/95 transition cursor-pointer">
+                  Calculate Required Fertilizer Bags
+                </button>
+              </div>
+            </form>
+            {soilResult && (
+              <div className="mt-4 p-4 bg-emerald-50/60 border border-emerald-200 rounded-xl text-xs flex flex-col gap-2">
+                <div className="font-bold text-emerald-900 text-sm">Recommended Dosage for {soilAcres} Acres of {soilCrop}:</div>
+                <div className="grid grid-cols-3 gap-2 text-center mt-1">
+                  <div className="bg-white p-2.5 rounded-lg border border-emerald-200">
+                    <span className="text-[10px] text-muted-foreground font-bold block">UREA (46% N)</span>
+                    <span className="text-base font-extrabold text-emerald-700">{soilResult.urea} Bags</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-lg border border-emerald-200">
+                    <span className="text-[10px] text-muted-foreground font-bold block">DAP / SSP</span>
+                    <span className="text-base font-extrabold text-emerald-700">{soilResult.dap} Bags</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-lg border border-emerald-200">
+                    <span className="text-[10px] text-muted-foreground font-bold block">MOP (60% K)</span>
+                    <span className="text-base font-extrabold text-emerald-700">{soilResult.mop} Bags</span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-emerald-800 font-medium mt-1">🌿 <strong>Bio-culture:</strong> {soilResult.bio}</p>
+                <p className="text-[11px] text-emerald-800 font-medium">🍂 <strong>Organic Base:</strong> {soilResult.compost}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTool === "drip" && (
+          <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm animate-fade-in max-w-2xl mx-auto w-full mt-2">
+            <div className="flex items-center gap-2 mb-4 border-b border-border pb-3">
+              <Droplets className="size-5 text-blue-600" />
+              <h3 className="text-base lg:text-lg font-bold text-primary">Smart Drip Irrigation & PMKSY Subsidy Estimator</h3>
+            </div>
+            <form onSubmit={calculateDrip} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">Land Area (Acres)</label>
+                <input type="number" min="1" step="1" className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" value={dripAcres} onChange={e=>setDripAcres(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">Crop Type</label>
+                <select className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" value={dripCrop} onChange={e=>setDripCrop(e.target.value)}>
+                  <option value="Sugarcane">Sugarcane (Inline 16mm)</option>
+                  <option value="Soybean">Soybean / Pulses (Inline 12mm)</option>
+                  <option value="Cotton">Cotton (Online Drippers)</option>
+                </select>
+              </div>
+              <div className="sm:col-span-2">
+                <button type="submit" className="w-full h-11 bg-primary text-primary-foreground font-semibold rounded-xl text-sm hover:bg-primary/95 transition cursor-pointer">
+                  Compile Drip System & Subsidy Estimate
+                </button>
+              </div>
+            </form>
+            {dripResult && (
+              <div className="mt-4 p-4 bg-blue-50/60 border border-blue-200 rounded-xl text-xs flex flex-col gap-2">
+                <div className="font-bold text-blue-900 text-sm">Drip Setup Estimate for {dripAcres} Acres:</div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-1">
+                  <div className="bg-white p-2.5 rounded-lg border border-blue-200">
+                    <span className="text-[10px] text-muted-foreground block">Lateral Tubing</span>
+                    <span className="text-sm font-bold text-blue-900">{dripResult.lineMeters} Meters</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-lg border border-blue-200">
+                    <span className="text-[10px] text-muted-foreground block">Pump HP Required</span>
+                    <span className="text-sm font-bold text-blue-900">{dripResult.pumpHp}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-lg border border-blue-200">
+                    <span className="text-[10px] text-muted-foreground block">Govt Subsidy (PMKSY)</span>
+                    <span className="text-sm font-bold text-emerald-600">{dripResult.govtSubsidy}</span>
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-blue-200 font-medium">
+                  <span>Estimated Net Cost to Farmer:</span>
+                  <span className="font-extrabold text-primary text-sm">{dripResult.farmerShare}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTool === "machinery" && (
+          <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm animate-fade-in max-w-2xl mx-auto w-full mt-2">
+            <div className="flex items-center gap-2 mb-4 border-b border-border pb-3">
+              <Tractor className="size-5 text-amber-600" />
+              <h3 className="text-base lg:text-lg font-bold text-primary">Custom Hiring Center (SMAM Equipment Rental)</h3>
+            </div>
+            <form onSubmit={handleMachineryBook} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">Equipment / Machinery</label>
+                <select className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" value={machineryType} onChange={e=>setMachineryType(e.target.value)}>
+                  <option value="Combine Harvester">Combine Harvester (₹1,800/hr)</option>
+                  <option value="45 HP Tractor + Rotavator">45 HP Tractor + Rotavator (₹850/hr)</option>
+                  <option value="Agri Spray Drone">Agri Spray Drone (₹350/acre)</option>
+                  <option value="Multi-crop Thresher">Multi-crop Thresher (₹650/hr)</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">Required Hours / Acres</label>
+                <input type="number" min="1" className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" value={machineryHours} onChange={e=>setMachineryHours(e.target.value)} />
+              </div>
+              <div className="sm:col-span-2">
+                <button type="submit" className="w-full h-11 bg-primary text-primary-foreground font-semibold rounded-xl text-sm hover:bg-primary/95 transition cursor-pointer">
+                  Request Custom Hiring Booking
+                </button>
+              </div>
+            </form>
+            {machineryBooked && (
+              <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-center gap-2">
+                <CheckCircle2 className="size-5 text-amber-600 shrink-0" />
+                <span>Booking request confirmed! Local Satara SMAM Custom Hiring operator will call your registered phone to confirm delivery time.</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTool === "buyer" && (
+          <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm animate-fade-in max-w-2xl mx-auto w-full mt-2">
+            <div className="flex items-center gap-2 mb-4 border-b border-border pb-3">
+              <ShoppingBag className="size-5 text-violet-600" />
+              <h3 className="text-base lg:text-lg font-bold text-primary">Direct Produce Listing to Verified FPOs</h3>
+            </div>
+            <form onSubmit={handleProduceListing} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">Crop</label>
+                <select className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" value={listingCrop} onChange={e=>setListingCrop(e.target.value)}>
+                  <option value="Soybean">Soybean</option>
+                  <option value="Cotton">Cotton</option>
+                  <option value="Turmeric">Turmeric</option>
+                  <option value="Sugarcane">Sugarcane</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">Quantity (Quintals)</label>
+                <input type="number" min="5" className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" value={listingQty} onChange={e=>setListingQty(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">Asking Price (₹/Qtl)</label>
+                <input type="number" min="1000" className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" value={listingPrice} onChange={e=>setListingPrice(e.target.value)} />
+              </div>
+              <div className="sm:col-span-3">
+                <button type="submit" className="w-full h-11 bg-primary text-primary-foreground font-semibold rounded-xl text-sm hover:bg-primary/95 transition cursor-pointer">
+                  Publish Produce Listing to FPO Buyers
+                </button>
+              </div>
+            </form>
+            {listingSuccess && (
+              <div className="mt-4 p-4 bg-violet-50 border border-violet-200 rounded-xl text-xs text-violet-900 flex items-center gap-2">
+                <CheckCircle2 className="size-5 text-violet-600 shrink-0" />
+                <span>Your harvest offer ({listingQty} Qtl {listingCrop} @ ₹{listingPrice}/Qtl) is live on AgriSphere FPO Connect! 2 regional buyers notified.</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTool === "kcc" && (
+          <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm animate-fade-in max-w-2xl mx-auto w-full mt-2">
+            <div className="flex items-center gap-2 mb-4 border-b border-border pb-3">
+              <Coins className="size-5 text-teal-600" />
+              <h3 className="text-base lg:text-lg font-bold text-primary">Kisan Credit Card (KCC) 4% Net Interest Subvention Helper</h3>
+            </div>
+            <form onSubmit={calculateKcc} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">Desired KCC Loan Amount (₹)</label>
+                <input type="number" step="10000" min="10000" max="300000" className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" value={kccAmount} onChange={e=>setKccAmount(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">Govt Prompt Subvention</label>
+                <input type="text" disabled className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-accent text-muted-foreground font-semibold" value="3% p.a. Prompt Rebate" />
+              </div>
+              <div className="sm:col-span-2">
+                <button type="submit" className="w-full h-11 bg-primary text-primary-foreground font-semibold rounded-xl text-sm hover:bg-primary/95 transition cursor-pointer">
+                  Calculate Effective Interest Savings
+                </button>
+              </div>
+            </form>
+            {kccResult && (
+              <div className="mt-4 p-4 bg-teal-50/60 border border-teal-200 rounded-xl text-xs flex flex-col gap-2">
+                <div className="font-bold text-teal-900 text-sm">KCC Loan Interest Breakdown for {kccResult.amount}:</div>
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  <div className="bg-white p-2.5 rounded-lg border border-teal-200">
+                    <span className="text-[10px] text-muted-foreground block">Net Annual Interest (4%)</span>
+                    <span className="text-base font-extrabold text-teal-700">{kccResult.annualInterest}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-lg border border-teal-200">
+                    <span className="text-[10px] text-muted-foreground block">Govt Subvention Savings</span>
+                    <span className="text-base font-extrabold text-emerald-600">{kccResult.saved}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTool === "organic" && (
+          <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm animate-fade-in max-w-2xl mx-auto w-full mt-2">
+            <div className="flex items-center gap-2 mb-4 border-b border-border pb-3">
+              <Leaf className="size-5 text-lime-600" />
+              <h3 className="text-base lg:text-lg font-bold text-primary">Jeevamrut & PKVY Bio-Input Recipe Guide</h3>
+            </div>
+            <div className="space-y-3 text-xs">
+              <div className="p-3 bg-lime-50 border border-lime-200 rounded-xl text-lime-900">
+                <h4 className="font-bold text-sm text-lime-950 mb-1">🥛 Jeevamrut Preparation (200 Litres for 1 Acre):</h4>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>200 Litres Water + 10 Kg Fresh Cow Dung + 10 Litres Cow Urine</li>
+                  <li>2 Kg Jaggery (Gur) + 2 Kg Pulse Flour (Besan) + 1 Handful Virgin Soil</li>
+                  <li>Stir clockwise 2 times daily; keep under shade for 48-72 hours before applying via drip or irrigation channel.</li>
+                </ul>
+              </div>
+              <div className="p-3 bg-accent border border-border rounded-xl">
+                <h4 className="font-bold text-sm text-primary mb-1">📜 PKVY Organic Group Registration:</h4>
+                <p>Register your Satara farmer cluster (50 farmers minimum) to receive ₹31,000/ha government grant for organic conversion and branding.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTool === "solar" && (
+          <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm animate-fade-in max-w-2xl mx-auto w-full mt-2">
+            <div className="flex items-center gap-2 mb-4 border-b border-border pb-3">
+              <Sun className="size-5 text-orange-600" />
+              <h3 className="text-base lg:text-lg font-bold text-primary">PM-KUSUM 90% Subsidized Solar Pump Eligibility</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-3 bg-orange-50 border border-orange-200 rounded-xl text-center">
+                <span className="font-bold block text-sm text-orange-950">3 HP Solar Pump</span>
+                <span className="text-[11px] text-muted-foreground block mt-0.5">Govt Pays: 90% (₹1,48,000)</span>
+                <span className="font-extrabold text-primary block mt-1">Farmer Share: ₹16,500</span>
+              </div>
+              <div className="p-3 bg-orange-50 border border-orange-200 rounded-xl text-center">
+                <span className="font-bold block text-sm text-orange-950">5 HP Solar Pump</span>
+                <span className="text-[11px] text-muted-foreground block mt-0.5">Govt Pays: 90% (₹2,10,000)</span>
+                <span className="font-extrabold text-primary block mt-1">Farmer Share: ₹23,300</span>
+              </div>
+              <div className="p-3 bg-orange-50 border border-orange-200 rounded-xl text-center">
+                <span className="font-bold block text-sm text-orange-950">7.5 HP Solar Pump</span>
+                <span className="text-[11px] text-muted-foreground block mt-0.5">Govt Pays: 90% (₹2,95,000)</span>
+                <span className="font-extrabold text-primary block mt-1">Farmer Share: ₹32,800</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
