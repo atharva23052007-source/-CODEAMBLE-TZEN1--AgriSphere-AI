@@ -53,7 +53,9 @@ import {
   RefreshCw,
   Scale,
   Building2,
-  Coins
+  Coins,
+  Edit3,
+  X
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -81,7 +83,7 @@ type Lang = "en" | "mr" | "hi";
 
 const nav = [
   { id: "home", label: "Home", icon: Home },
-  { id: "services", label: "Services", icon: LayoutGrid },
+  { id: "services", label: "Farm Management", icon: LayoutGrid },
   { id: "ai", label: "AI Assistant", icon: Bot },
   { id: "docs", label: "My Documents", icon: FileText },
   { id: "profile", label: "Profile", icon: User },
@@ -1115,140 +1117,204 @@ function AiAssistantView({
   );
 }
 
+interface FarmRecord {
+  id: string;
+  farmerId: string;
+  farmName: string;
+  cropName: string;
+  area: number;
+  season: string;
+  status: string;
+  soilType?: string;
+  plantingDate?: string;
+  updatedAt?: string;
+}
+
 function ServicesView({ selectedService, setSelectedService, mounted }: { selectedService: string | null; setSelectedService: any; mounted: boolean }) {
-  const [crop, setCrop] = useState("");
-  const [stage, setStage] = useState("");
-  const [notes, setNotes] = useState("");
-  const [advice, setAdvice] = useState<string | null>(null);
-  const [adviceLoading, setAdviceLoading] = useState(false);
+  const [farms, setFarms] = useState<FarmRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [seasonFilter, setSeasonFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
 
-  // Specialized Services Hub State
-  const [activeTool, setActiveTool] = useState<string | null>(null);
+  // Modal / Form state for Add and Edit
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingFarm, setEditingFarm] = useState<FarmRecord | null>(null);
 
-  // 1. Soil Calculator State
-  const [soilAcres, setSoilAcres] = useState("2");
-  const [soilCrop, setSoilCrop] = useState("Soybean");
-  const [soilResult, setSoilResult] = useState<any>(null);
+  // Form Field States
+  const [farmName, setFarmName] = useState("");
+  const [cropName, setCropName] = useState("");
+  const [area, setArea] = useState("");
+  const [season, setSeason] = useState("Kharif");
+  const [status, setStatus] = useState("Growing");
+  const [soilType, setSoilType] = useState("Black Cotton Soil");
+  const [plantingDate, setPlantingDate] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 2. Drip Calculator State
-  const [dripAcres, setDripAcres] = useState("3");
-  const [dripCrop, setDripCrop] = useState("Sugarcane");
-  const [dripResult, setDripResult] = useState<any>(null);
+  const defaultInitialFarms: FarmRecord[] = [
+    { id: "FARM-101", farmerId: "farmer_patil", farmName: "Satara Main Field", cropName: "Soybean (JS-335)", area: 4.5, season: "Kharif", status: "Growing", soilType: "Black Cotton Soil", plantingDate: "2026-06-15", updatedAt: "2026-08-08" },
+    { id: "FARM-102", farmerId: "farmer_patil", farmName: "Koregaon Riverside", cropName: "Sugarcane (Co-86032)", area: 6.0, season: "Annual", status: "Sown", soilType: "Loamy Soil", plantingDate: "2026-01-20", updatedAt: "2026-08-08" },
+    { id: "FARM-103", farmerId: "farmer_patil", farmName: "Wai Hillside Plot", cropName: "Turmeric (Rajapuri)", area: 2.5, season: "Kharif", status: "Flowering", soilType: "Red Sandy Soil", plantingDate: "2026-05-10", updatedAt: "2026-08-08" },
+    { id: "FARM-104", farmerId: "farmer_patil", farmName: "North Acre Plot", cropName: "Wheat (Sharbati)", area: 3.0, season: "Rabi", status: "Harvested", soilType: "Alluvial Soil", plantingDate: "2025-11-15", updatedAt: "2026-08-08" }
+  ];
 
-  // 3. Machinery Booking State
-  const [machineryType, setMachineryType] = useState("Combine Harvester");
-  const [machineryHours, setMachineryHours] = useState("4");
-  const [machineryBooked, setMachineryBooked] = useState(false);
+  // Fetch Farms from Backend API with localStorage fallback
+  const fetchFarms = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("http://localhost:5000/api/farms");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.farms && Array.isArray(data.farms)) {
+          setFarms(data.farms);
+          localStorage.setItem("agrisphere_farms", JSON.stringify(data.farms));
+          setLoading(false);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("Backend API fetch failed, loading from local cache...", err);
+    }
 
-  // 4. Direct Buyer Listing State
-  const [listingCrop, setListingCrop] = useState("Soybean");
-  const [listingQty, setListingQty] = useState("50");
-  const [listingPrice, setListingPrice] = useState("4900");
-  const [listingSuccess, setListingSuccess] = useState(false);
+    const cached = localStorage.getItem("agrisphere_farms");
+    if (cached) {
+      try {
+        setFarms(JSON.parse(cached));
+      } catch {
+        setFarms(defaultInitialFarms);
+      }
+    } else {
+      setFarms(defaultInitialFarms);
+    }
+    setLoading(false);
+  };
 
-  // 5. KCC Calculator State
-  const [kccAmount, setKccAmount] = useState("100000");
-  const [kccResult, setKccResult] = useState<any>(null);
+  useEffect(() => {
+    fetchFarms();
+  }, []);
 
-  const handleAdvice = (e: any) => {
+  const handleOpenAddModal = () => {
+    setEditingFarm(null);
+    setFarmName("");
+    setCropName("");
+    setArea("3.0");
+    setSeason("Kharif");
+    setStatus("Growing");
+    setSoilType("Black Cotton Soil");
+    setPlantingDate(new Date().toISOString().split("T")[0]);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (farm: FarmRecord) => {
+    setEditingFarm(farm);
+    setFarmName(farm.farmName);
+    setCropName(farm.cropName);
+    setArea(farm.area.toString());
+    setSeason(farm.season);
+    setStatus(farm.status);
+    setSoilType(farm.soilType || "Loamy Soil");
+    setPlantingDate(farm.plantingDate || "");
+    setIsModalOpen(true);
+  };
+
+  const handleSubmitFarm = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!crop || !stage) {
-      toast.error("Please choose a crop type and growth stage.");
+    if (!farmName.trim() || !cropName.trim() || !area || isNaN(Number(area)) || Number(area) <= 0) {
+      toast.error("Please enter a valid Farm Name, Crop Name, and Area (in Acres).");
       return;
     }
-    setAdviceLoading(true);
-    setTimeout(() => {
-      setAdviceLoading(false);
-      setAdvice(`Recommended Actions for ${crop} at ${stage} stage: Current Satara weather forecasts high soil humidity. Sow on raised seed beds. Treat seeds with Trichoderma (10g/kg). Split Nitrogen doses into 3 equal applications (planting, vegetative, and flowering). Keep soil moisture around 60%.`);
-      toast.success("AI Crop advice compiled successfully!");
-    }, 905);
-  };
 
-  const calculateSoilFertilizer = (e: any) => {
-    e.preventDefault();
-    const acres = Number(soilAcres) || 1;
-    if (soilCrop === "Soybean") {
-      setSoilResult({
-        urea: (acres * 0.85).toFixed(1),
-        dap: (acres * 1.3).toFixed(1),
-        mop: (acres * 0.65).toFixed(1),
-        bio: "Rhizobium + PSB Liquid Culture (500 ml/acre)",
-        compost: `${acres * 2} Tons FYM / Organic Compost`
-      });
-    } else if (soilCrop === "Sugarcane") {
-      setSoilResult({
-        urea: (acres * 4.5).toFixed(1),
-        dap: (acres * 2.5).toFixed(1),
-        mop: (acres * 2.2).toFixed(1),
-        bio: "Acetobacter + PSB Culture (1 Litre/acre)",
-        compost: `${acres * 5} Tons Pressmud / FYM`
-      });
-    } else if (soilCrop === "Cotton") {
-      setSoilResult({
-        urea: (acres * 2.1).toFixed(1),
-        dap: (acres * 1.5).toFixed(1),
-        mop: (acres * 1.0).toFixed(1),
-        bio: "Azotobacter + Micro-nutrient Spray (250g/acre)",
-        compost: `${acres * 3} Tons FYM Compost`
-      });
+    setIsSubmitting(true);
+    const payload = {
+      farmName: farmName.trim(),
+      cropName: cropName.trim(),
+      area: parseFloat(area),
+      season,
+      status,
+      soilType: soilType || "Loamy Soil",
+      plantingDate: plantingDate || new Date().toISOString().split("T")[0]
+    };
+
+    if (editingFarm) {
+      // EDIT existing farm
+      try {
+        await fetch(`http://localhost:5000/api/farms/${editingFarm.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+      } catch (err) {
+        console.warn("Backend update failed, updating local state:", err);
+      }
+
+      const updatedList = farms.map(f => f.id === editingFarm.id ? { ...f, ...payload, updatedAt: new Date().toISOString().split("T")[0] } : f);
+      setFarms(updatedList);
+      localStorage.setItem("agrisphere_farms", JSON.stringify(updatedList));
+      toast.success(`Farm "${farmName}" updated successfully!`);
     } else {
-      setSoilResult({
-        urea: (acres * 2.0).toFixed(1),
-        dap: (acres * 1.2).toFixed(1),
-        mop: (acres * 0.8).toFixed(1),
-        bio: "Azospirillum + ZSB Culture",
-        compost: `${acres * 2.5} Tons Organic Compost`
-      });
+      // ADD new farm
+      let createdFarm: FarmRecord = {
+        id: `FARM-${Date.now().toString().slice(-5)}`,
+        farmerId: "farmer_patil",
+        ...payload,
+        updatedAt: new Date().toISOString().split("T")[0]
+      };
+
+      try {
+        const res = await fetch("http://localhost:5000/api/farms", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.farm) createdFarm = data.farm;
+        }
+      } catch (err) {
+        console.warn("Backend add failed, saving to local state:", err);
+      }
+
+      const newList = [createdFarm, ...farms];
+      setFarms(newList);
+      localStorage.setItem("agrisphere_farms", JSON.stringify(newList));
+      toast.success(`Added new farm "${farmName}" (${cropName})!`);
     }
-    toast.success("Soil N-P-K dosage calculated!");
+
+    setIsSubmitting(false);
+    setIsModalOpen(false);
   };
 
-  const calculateDrip = (e: any) => {
-    e.preventDefault();
-    const acres = Number(dripAcres) || 1;
-    const lineMeters = acres * 4000;
-    const totalCost = acres * 45000;
-    const govtSubsidy = totalCost * 0.80;
-    const farmerShare = totalCost * 0.20;
+  const handleDeleteFarm = async (farm: FarmRecord) => {
+    if (!window.confirm(`Are you sure you want to delete "${farm.farmName}" (${farm.cropName})?`)) {
+      return;
+    }
 
-    setDripResult({
-      lineMeters: lineMeters.toLocaleString(),
-      pumpHp: acres <= 3 ? "3 HP" : acres <= 7 ? "5 HP" : "7.5 HP",
-      dischargeRate: `${acres * 1200} Litres / Hour`,
-      totalCost: `₹${totalCost.toLocaleString()}`,
-      govtSubsidy: `₹${govtSubsidy.toLocaleString()} (80% PMKSY Subsidy)`,
-      farmerShare: `₹${farmerShare.toLocaleString()}`
-    });
-    toast.success("Drip micro-irrigation estimate compiled!");
+    try {
+      await fetch(`http://localhost:5000/api/farms/${farm.id}`, { method: "DELETE" });
+    } catch (err) {
+      console.warn("Backend delete failed, removing locally:", err);
+    }
+
+    const newList = farms.filter(f => f.id !== farm.id);
+    setFarms(newList);
+    localStorage.setItem("agrisphere_farms", JSON.stringify(newList));
+    toast.success(`Deleted farm "${farm.farmName}"`);
   };
 
-  const calculateKcc = (e: any) => {
-    e.preventDefault();
-    const amt = Number(kccAmount) || 100000;
-    const promptSubsidy = amt * 0.03;
-    const netInterest = amt * 0.04;
-    setKccResult({
-      amount: `₹${amt.toLocaleString()}`,
-      baseRate: "7% p.a.",
-      subvention: `-3% (Govt Prompt Repayment Rebate)`,
-      effectiveRate: "4% Net Interest Rate",
-      annualInterest: `₹${netInterest.toLocaleString()}`,
-      saved: `₹${promptSubsidy.toLocaleString()}`
-    });
-    toast.success("KCC Loan subvention calculated!");
-  };
+  // Filtered Farms Calculation
+  const filteredFarms = farms.filter(f => {
+    const matchesSearch = f.farmName.toLowerCase().includes(searchQuery.toLowerCase()) || f.cropName.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSeason = seasonFilter === "All" || f.season.toLowerCase() === seasonFilter.toLowerCase();
+    const matchesStatus = statusFilter === "All" || f.status.toLowerCase() === statusFilter.toLowerCase();
+    return matchesSearch && matchesSeason && matchesStatus;
+  });
 
-  const handleMachineryBook = (e: any) => {
-    e.preventDefault();
-    setMachineryBooked(true);
-    toast.success(`Booking request submitted for ${machineryType}! Custom Hiring Center representative will contact you.`);
-  };
-
-  const handleProduceListing = (e: any) => {
-    e.preventDefault();
-    setListingSuccess(true);
-    toast.success(`Listed ${listingQty} Quintals of ${listingCrop} at ₹${listingPrice}/Qtl on Direct FPO Buyer Portal!`);
-  };
+  // Summary Statistics
+  const totalFields = farms.length;
+  const totalArea = farms.reduce((acc, f) => acc + (Number(f.area) || 0), 0).toFixed(1);
+  const activeCropsCount = farms.filter(f => f.status !== "Harvested" && f.status !== "Fallow").length;
+  const harvestedCount = farms.filter(f => f.status === "Harvested" || f.status === "Harvesting").length;
 
   if (!selectedService) {
     return (
@@ -1257,441 +1323,392 @@ function ServicesView({ selectedService, setSelectedService, mounted }: { select
         <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-primary font-bold text-lg lg:text-xl">
-              <LayoutGrid className="size-6 text-primary" />
-              <span>Agricultural & Financial Services Hub</span>
+              <Sprout className="size-6 text-primary" />
+              <span>Farm & Crop Management</span>
             </div>
             <p className="text-xs lg:text-sm text-muted-foreground mt-1">
-              Specialized tools, calculators, equipment rentals, soil diagnostics, and direct buyer access for farmers.
+              Add, track, edit, and manage your crop fields, acreage, cultivation seasons, and harvest status.
             </p>
           </div>
-          <span className="px-3 py-1 bg-accent text-primary text-xs font-bold rounded-full border border-primary/20 shrink-0">
-            8 Specialized Farmer Services Active
-          </span>
+          <button
+            onClick={handleOpenAddModal}
+            className="h-11 px-5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl text-xs lg:text-sm transition flex items-center gap-2 shadow-sm shrink-0 cursor-pointer"
+          >
+            <Plus className="size-4" />
+            Add New Farm / Crop
+          </button>
         </div>
 
-        {/* Services Directory */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5">
-          {/* Service 1: Soil NPK */}
-          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
-            <div>
-              <div className="size-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-3">
-                <FlaskConical className="size-6" />
-              </div>
-              <h4 className="font-bold text-foreground text-base">Soil N-P-K Health Check</h4>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                Input land size & soil test values to get bag-level Urea, DAP & MOP dosage.
-              </p>
+        {/* Summary Statistics */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-card border border-border rounded-2xl p-4 lg:p-5 shadow-sm flex items-center gap-4">
+            <div className="size-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+              <MapPin className="size-6" />
             </div>
-            <button
-              onClick={() => setActiveTool(activeTool === "soil" ? null : "soil")}
-              className="mt-4 w-full h-10 bg-primary/10 hover:bg-primary text-primary hover:text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <Calculator className="size-3.5" />
-              {activeTool === "soil" ? "Close Calculator" : "Open N-P-K Calculator"}
-            </button>
+            <div>
+              <span className="text-xs text-muted-foreground font-medium block">Total Fields</span>
+              <span className="text-xl lg:text-2xl font-extrabold text-foreground">{totalFields} Plots</span>
+            </div>
           </div>
 
-          {/* Service 2: Machinery SMAM */}
-          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
-            <div>
-              <div className="size-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center mb-3">
-                <Tractor className="size-6" />
-              </div>
-              <h4 className="font-bold text-foreground text-base">Custom Hiring & Drone Hub</h4>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                Book subsidized tractors, harvesters & spray drones under SMAM (50%-80% subsidy).
-              </p>
+          <div className="bg-card border border-border rounded-2xl p-4 lg:p-5 shadow-sm flex items-center gap-4">
+            <div className="size-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+              <Scale className="size-6" />
             </div>
-            <button
-              onClick={() => setActiveTool(activeTool === "machinery" ? null : "machinery")}
-              className="mt-4 w-full h-10 bg-primary/10 hover:bg-primary text-primary hover:text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <Tractor className="size-3.5" />
-              {activeTool === "machinery" ? "Close Rental Portal" : "Book Equipment / Drone"}
-            </button>
+            <div>
+              <span className="text-xs text-muted-foreground font-medium block">Total Cultivated Area</span>
+              <span className="text-xl lg:text-2xl font-extrabold text-foreground">{totalArea} Acres</span>
+            </div>
           </div>
 
-          {/* Service 3: Smart Drip */}
-          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
-            <div>
-              <div className="size-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center mb-3">
-                <Droplet className="size-6" />
-              </div>
-              <h4 className="font-bold text-foreground text-base">Smart Drip Irrigation</h4>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                Calculate lateral tubing, pump HP & PMKSY 80% Micro-Irrigation subsidy savings.
-              </p>
+          <div className="bg-card border border-border rounded-2xl p-4 lg:p-5 shadow-sm flex items-center gap-4">
+            <div className="size-12 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center shrink-0">
+              <Sprout className="size-6" />
             </div>
-            <button
-              onClick={() => setActiveTool(activeTool === "drip" ? null : "drip")}
-              className="mt-4 w-full h-10 bg-primary/10 hover:bg-primary text-primary hover:text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <Droplets className="size-3.5" />
-              {activeTool === "drip" ? "Close Calculator" : "Calculate Drip & Subsidy"}
-            </button>
+            <div>
+              <span className="text-xs text-muted-foreground font-medium block">Active Crops</span>
+              <span className="text-xl lg:text-2xl font-extrabold text-foreground">{activeCropsCount} Active</span>
+            </div>
           </div>
 
-          {/* Service 4: Direct Buyer Listing */}
-          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
-            <div>
-              <div className="size-12 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center mb-3">
-                <ShoppingBag className="size-6" />
-              </div>
-              <h4 className="font-bold text-foreground text-base">Direct FPO & Buyer Portal</h4>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                List produce directly to verified millers & FPOs without middleman commission.
-              </p>
+          <div className="bg-card border border-border rounded-2xl p-4 lg:p-5 shadow-sm flex items-center gap-4">
+            <div className="size-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="size-6" />
             </div>
-            <button
-              onClick={() => setActiveTool(activeTool === "buyer" ? null : "buyer")}
-              className="mt-4 w-full h-10 bg-primary/10 hover:bg-primary text-primary hover:text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <Building2 className="size-3.5" />
-              {activeTool === "buyer" ? "Close Marketplace" : "List Produce for Buyers"}
-            </button>
-          </div>
-
-          {/* Service 5: KCC Loan Calculator */}
-          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
             <div>
-              <div className="size-12 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center mb-3">
-                <CreditCard className="size-6" />
-              </div>
-              <h4 className="font-bold text-foreground text-base">KCC 4% Interest Helper</h4>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                Calculate Kisan Credit Card micro-loans with 3% prompt repayment subvention.
-              </p>
+              <span className="text-xs text-muted-foreground font-medium block">Harvest Ready / Harvested</span>
+              <span className="text-xl lg:text-2xl font-extrabold text-foreground">{harvestedCount} Fields</span>
             </div>
-            <button
-              onClick={() => setActiveTool(activeTool === "kcc" ? null : "kcc")}
-              className="mt-4 w-full h-10 bg-primary/10 hover:bg-primary text-primary hover:text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <Coins className="size-3.5" />
-              {activeTool === "kcc" ? "Close Calculator" : "Calculate KCC Loan"}
-            </button>
-          </div>
-
-          {/* Service 6: Organic PKVY Guide */}
-          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
-            <div>
-              <div className="size-12 rounded-xl bg-lime-100 text-lime-800 flex items-center justify-center mb-3">
-                <Leaf className="size-6" />
-              </div>
-              <h4 className="font-bold text-foreground text-base">Organic Farming & PKVY</h4>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                Access Jeevamrut bio-recipes, soil organic carbon guide & cluster certification.
-              </p>
-            </div>
-            <button
-              onClick={() => setActiveTool(activeTool === "organic" ? null : "organic")}
-              className="mt-4 w-full h-10 bg-primary/10 hover:bg-primary text-primary hover:text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <Sprout className="size-3.5" />
-              {activeTool === "organic" ? "Close Guide" : "View Organic Recipes"}
-            </button>
-          </div>
-
-          {/* Service 7: PM-KUSUM Solar Pump */}
-          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
-            <div>
-              <div className="size-12 rounded-xl bg-orange-100 text-orange-700 flex items-center justify-center mb-3">
-                <Sun className="size-6" />
-              </div>
-              <h4 className="font-bold text-foreground text-base">PM-KUSUM Solar Pump</h4>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                Check 90% government subsidy eligibility for 3HP, 5HP & 7.5HP solar pumps.
-              </p>
-            </div>
-            <button
-              onClick={() => setActiveTool(activeTool === "solar" ? null : "solar")}
-              className="mt-4 w-full h-10 bg-primary/10 hover:bg-primary text-primary hover:text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <Zap className="size-3.5" />
-              {activeTool === "solar" ? "Close Checker" : "Check Solar Subsidy"}
-            </button>
-          </div>
-
-          {/* Service 8: Weather Alert Subscription */}
-          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
-            <div>
-              <div className="size-12 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center mb-3">
-                <CloudRain className="size-6" />
-              </div>
-              <h4 className="font-bold text-foreground text-base">Micro-Climate Alerts</h4>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                Subscribe to instant SMS/WhatsApp alerts for unseasonal rain, frost & hail.
-              </p>
-            </div>
-            <button
-              onClick={() => toast.success("Subscribed to Satara Regional Farm Weather Risk SMS Alerts!")}
-              className="mt-4 w-full h-10 bg-primary/10 hover:bg-primary text-primary hover:text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <Bell className="size-3.5" />
-              Subscribe SMS Alerts
-            </button>
           </div>
         </div>
 
-        {/* Interactive Tool Containers */}
-        {activeTool === "soil" && (
-          <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm animate-fade-in max-w-2xl mx-auto w-full mt-2">
-            <div className="flex items-center gap-2 mb-4 border-b border-border pb-3">
-              <FlaskConical className="size-5 text-emerald-600" />
-              <h3 className="text-base lg:text-lg font-bold text-primary">Soil N-P-K Dosage & Nutrient Calculator</h3>
+        {/* Filters & View Toggle Bar */}
+        <div className="bg-card border border-border rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          <div className="relative flex-1">
+            <Search className="size-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search by farm or crop name..."
+              className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-xl text-xs lg:text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              className="bg-background border border-border rounded-xl px-3 py-2 text-xs font-medium text-foreground cursor-pointer"
+              value={seasonFilter}
+              onChange={e => setSeasonFilter(e.target.value)}
+            >
+              <option value="All">All Seasons</option>
+              <option value="Kharif">Kharif</option>
+              <option value="Rabi">Rabi</option>
+              <option value="Zaid">Zaid</option>
+              <option value="Annual">Annual</option>
+            </select>
+
+            <select
+              className="bg-background border border-border rounded-xl px-3 py-2 text-xs font-medium text-foreground cursor-pointer"
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+            >
+              <option value="All">All Statuses</option>
+              <option value="Sown">Sown</option>
+              <option value="Growing">Growing</option>
+              <option value="Flowering">Flowering</option>
+              <option value="Harvesting">Harvesting</option>
+              <option value="Harvested">Harvested</option>
+              <option value="Fallow">Fallow</option>
+            </select>
+
+            <div className="flex items-center bg-muted border border-border rounded-xl p-1 shrink-0">
+              <button
+                onClick={() => setViewMode("cards")}
+                className={`p-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${viewMode === "cards" ? "bg-card text-primary shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+                title="Grid Cards View"
+              >
+                <LayoutGrid className="size-4" />
+              </button>
+              <button
+                onClick={() => setViewMode("table")}
+                className={`p-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${viewMode === "table" ? "bg-card text-primary shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+                title="Table List View"
+              >
+                <Layers className="size-4" />
+              </button>
             </div>
-            <form onSubmit={calculateSoilFertilizer} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground block mb-1">Land Size (Acres)</label>
-                <input type="number" min="0.5" step="0.5" className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" value={soilAcres} onChange={e=>setSoilAcres(e.target.value)} />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground block mb-1">Select Target Crop</label>
-                <select className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" value={soilCrop} onChange={e=>setSoilCrop(e.target.value)}>
-                  <option value="Soybean">Soybean</option>
-                  <option value="Sugarcane">Sugarcane</option>
-                  <option value="Cotton">Cotton</option>
-                  <option value="Wheat">Wheat</option>
-                </select>
-              </div>
-              <div className="sm:col-span-2">
-                <button type="submit" className="w-full h-11 bg-primary text-primary-foreground font-semibold rounded-xl text-sm hover:bg-primary/95 transition cursor-pointer">
-                  Calculate Required Fertilizer Bags
-                </button>
-              </div>
-            </form>
-            {soilResult && (
-              <div className="mt-4 p-4 bg-emerald-50/60 border border-emerald-200 rounded-xl text-xs flex flex-col gap-2">
-                <div className="font-bold text-emerald-900 text-sm">Recommended Dosage for {soilAcres} Acres of {soilCrop}:</div>
-                <div className="grid grid-cols-3 gap-2 text-center mt-1">
-                  <div className="bg-white p-2.5 rounded-lg border border-emerald-200">
-                    <span className="text-[10px] text-muted-foreground font-bold block">UREA (46% N)</span>
-                    <span className="text-base font-extrabold text-emerald-700">{soilResult.urea} Bags</span>
+          </div>
+        </div>
+
+        {/* Farm Content View */}
+        {loading ? (
+          <div className="p-8 text-center text-muted-foreground text-sm">Loading farm records...</div>
+        ) : filteredFarms.length === 0 ? (
+          <div className="bg-card border border-border rounded-2xl p-10 text-center flex flex-col items-center justify-center gap-3">
+            <Sprout className="size-12 text-muted-foreground/50" />
+            <h4 className="font-bold text-foreground text-base">No Farm Records Found</h4>
+            <p className="text-xs text-muted-foreground max-w-sm">
+              No crop fields matched your criteria. Add your first farm field or adjust search filters.
+            </p>
+            <button
+              onClick={handleOpenAddModal}
+              className="mt-2 h-9 px-4 bg-primary text-primary-foreground font-semibold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="size-3.5" /> Add Farm Record
+            </button>
+          </div>
+        ) : viewMode === "cards" ? (
+          /* Cards Grid View */
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            {filteredFarms.map(farm => {
+              const statusColors: Record<string, string> = {
+                Growing: "bg-emerald-100 text-emerald-800 border-emerald-300",
+                Sown: "bg-blue-100 text-blue-800 border-blue-300",
+                Flowering: "bg-violet-100 text-violet-800 border-violet-300",
+                Harvesting: "bg-amber-100 text-amber-800 border-amber-300",
+                Harvested: "bg-slate-100 text-slate-800 border-slate-300",
+                Fallow: "bg-rose-100 text-rose-800 border-rose-300",
+              };
+              const badgeClass = statusColors[farm.status] || "bg-accent text-primary border-primary/20";
+
+              return (
+                <div key={farm.id} className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <span className={`px-2.5 py-1 rounded-full border text-[11px] font-bold ${badgeClass}`}>
+                        ● {farm.status}
+                      </span>
+                      <span className="text-[11px] font-semibold text-muted-foreground bg-accent px-2 py-0.5 rounded-md">
+                        {farm.season}
+                      </span>
+                    </div>
+
+                    <h4 className="font-bold text-foreground text-base leading-snug">{farm.farmName}</h4>
+                    <p className="text-xs text-primary font-bold mt-0.5 flex items-center gap-1">
+                      <Leaf className="size-3.5" /> {farm.cropName}
+                    </p>
+
+                    <div className="mt-4 pt-3 border-t border-border/60 space-y-1.5 text-xs text-muted-foreground">
+                      <div className="flex items-center justify-between">
+                        <span>Land Area:</span>
+                        <strong className="text-foreground">{farm.area} Acres</strong>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Soil Type:</span>
+                        <strong className="text-foreground">{farm.soilType || "Loamy"}</strong>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Sowing Date:</span>
+                        <strong className="text-foreground">{farm.plantingDate || "N/A"}</strong>
+                      </div>
+                    </div>
                   </div>
-                  <div className="bg-white p-2.5 rounded-lg border border-emerald-200">
-                    <span className="text-[10px] text-muted-foreground font-bold block">DAP / SSP</span>
-                    <span className="text-base font-extrabold text-emerald-700">{soilResult.dap} Bags</span>
-                  </div>
-                  <div className="bg-white p-2.5 rounded-lg border border-emerald-200">
-                    <span className="text-[10px] text-muted-foreground font-bold block">MOP (60% K)</span>
-                    <span className="text-base font-extrabold text-emerald-700">{soilResult.mop} Bags</span>
+
+                  <div className="flex items-center gap-2 mt-5 pt-3 border-t border-border">
+                    <button
+                      onClick={() => handleOpenEditModal(farm)}
+                      className="flex-1 h-9 bg-accent hover:bg-accent/80 text-primary font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <Edit3 className="size-3.5" /> Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteFarm(farm)}
+                      className="h-9 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1 cursor-pointer"
+                      title="Delete Farm"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
                   </div>
                 </div>
-                <p className="text-[11px] text-emerald-800 font-medium mt-1">🌿 <strong>Bio-culture:</strong> {soilResult.bio}</p>
-                <p className="text-[11px] text-emerald-800 font-medium">🍂 <strong>Organic Base:</strong> {soilResult.compost}</p>
-              </div>
-            )}
+              );
+            })}
+          </div>
+        ) : (
+          /* Table List View */
+          <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-muted text-muted-foreground font-semibold border-b border-border">
+                  <tr>
+                    <th className="p-3.5 pl-5">Field / Farm Name</th>
+                    <th className="p-3.5">Crop Name</th>
+                    <th className="p-3.5">Area (Acres)</th>
+                    <th className="p-3.5">Season</th>
+                    <th className="p-3.5">Status</th>
+                    <th className="p-3.5">Soil Type</th>
+                    <th className="p-3.5 text-right pr-5">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredFarms.map(farm => (
+                    <tr key={farm.id} className="hover:bg-accent/30 transition">
+                      <td className="p-3.5 pl-5 font-bold text-foreground">{farm.farmName}</td>
+                      <td className="p-3.5 text-primary font-semibold flex items-center gap-1">
+                        <Leaf className="size-3.5" /> {farm.cropName}
+                      </td>
+                      <td className="p-3.5 font-bold text-foreground">{farm.area} Acres</td>
+                      <td className="p-3.5">{farm.season}</td>
+                      <td className="p-3.5">
+                        <span className="px-2 py-0.5 bg-accent text-primary rounded-md text-[11px] font-bold">
+                          {farm.status}
+                        </span>
+                      </td>
+                      <td className="p-3.5 text-muted-foreground">{farm.soilType || "Loamy"}</td>
+                      <td className="p-3.5 text-right pr-5">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => handleOpenEditModal(farm)}
+                            className="p-1.5 text-primary hover:bg-accent rounded-lg transition cursor-pointer"
+                            title="Edit Farm"
+                          >
+                            <Edit3 className="size-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteFarm(farm)}
+                            className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                            title="Delete Farm"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
-        {activeTool === "drip" && (
-          <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm animate-fade-in max-w-2xl mx-auto w-full mt-2">
-            <div className="flex items-center gap-2 mb-4 border-b border-border pb-3">
-              <Droplets className="size-5 text-blue-600" />
-              <h3 className="text-base lg:text-lg font-bold text-primary">Smart Drip Irrigation & PMKSY Subsidy Estimator</h3>
-            </div>
-            <form onSubmit={calculateDrip} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground block mb-1">Land Area (Acres)</label>
-                <input type="number" min="1" step="1" className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" value={dripAcres} onChange={e=>setDripAcres(e.target.value)} />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground block mb-1">Crop Type</label>
-                <select className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" value={dripCrop} onChange={e=>setDripCrop(e.target.value)}>
-                  <option value="Sugarcane">Sugarcane (Inline 16mm)</option>
-                  <option value="Soybean">Soybean / Pulses (Inline 12mm)</option>
-                  <option value="Cotton">Cotton (Online Drippers)</option>
-                </select>
-              </div>
-              <div className="sm:col-span-2">
-                <button type="submit" className="w-full h-11 bg-primary text-primary-foreground font-semibold rounded-xl text-sm hover:bg-primary/95 transition cursor-pointer">
-                  Compile Drip System & Subsidy Estimate
-                </button>
-              </div>
-            </form>
-            {dripResult && (
-              <div className="mt-4 p-4 bg-blue-50/60 border border-blue-200 rounded-xl text-xs flex flex-col gap-2">
-                <div className="font-bold text-blue-900 text-sm">Drip Setup Estimate for {dripAcres} Acres:</div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-1">
-                  <div className="bg-white p-2.5 rounded-lg border border-blue-200">
-                    <span className="text-[10px] text-muted-foreground block">Lateral Tubing</span>
-                    <span className="text-sm font-bold text-blue-900">{dripResult.lineMeters} Meters</span>
-                  </div>
-                  <div className="bg-white p-2.5 rounded-lg border border-blue-200">
-                    <span className="text-[10px] text-muted-foreground block">Pump HP Required</span>
-                    <span className="text-sm font-bold text-blue-900">{dripResult.pumpHp}</span>
-                  </div>
-                  <div className="bg-white p-2.5 rounded-lg border border-blue-200">
-                    <span className="text-[10px] text-muted-foreground block">Govt Subsidy (PMKSY)</span>
-                    <span className="text-sm font-bold text-emerald-600">{dripResult.govtSubsidy}</span>
-                  </div>
+        {/* Add / Edit Farm Modal */}
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+            <div className="bg-card border border-border rounded-2xl max-w-lg w-full p-5 lg:p-6 shadow-xl relative">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="absolute right-4 top-4 text-muted-foreground hover:text-foreground p-1 rounded-lg transition cursor-pointer"
+              >
+                <X className="size-5" />
+              </button>
+
+              <h3 className="text-lg font-bold text-primary mb-1">
+                {editingFarm ? "✏️ Edit Farm Record" : "🌱 Add New Farm Field"}
+              </h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                {editingFarm ? "Update crop name, acreage, season, or cultivation status." : "Register a new field/plot to your farmer dashboard."}
+              </p>
+
+              <form onSubmit={handleSubmitFarm} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">Farm / Field Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Satara Main Field, Plot 4"
+                    className="w-full border border-border rounded-xl px-3 py-2 text-sm bg-background"
+                    value={farmName}
+                    onChange={e => setFarmName(e.target.value)}
+                  />
                 </div>
-                <div className="mt-2 flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-blue-200 font-medium">
-                  <span>Estimated Net Cost to Farmer:</span>
-                  <span className="font-extrabold text-primary text-sm">{dripResult.farmerShare}</span>
+
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">Crop Name & Variety *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Soybean (JS-335)"
+                    className="w-full border border-border rounded-xl px-3 py-2 text-sm bg-background"
+                    value={cropName}
+                    onChange={e => setCropName(e.target.value)}
+                  />
                 </div>
-              </div>
-            )}
-          </div>
-        )}
 
-        {activeTool === "machinery" && (
-          <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm animate-fade-in max-w-2xl mx-auto w-full mt-2">
-            <div className="flex items-center gap-2 mb-4 border-b border-border pb-3">
-              <Tractor className="size-5 text-amber-600" />
-              <h3 className="text-base lg:text-lg font-bold text-primary">Custom Hiring Center (SMAM Equipment Rental)</h3>
-            </div>
-            <form onSubmit={handleMachineryBook} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground block mb-1">Equipment / Machinery</label>
-                <select className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" value={machineryType} onChange={e=>setMachineryType(e.target.value)}>
-                  <option value="Combine Harvester">Combine Harvester (₹1,800/hr)</option>
-                  <option value="45 HP Tractor + Rotavator">45 HP Tractor + Rotavator (₹850/hr)</option>
-                  <option value="Agri Spray Drone">Agri Spray Drone (₹350/acre)</option>
-                  <option value="Multi-crop Thresher">Multi-crop Thresher (₹650/hr)</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground block mb-1">Required Hours / Acres</label>
-                <input type="number" min="1" className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" value={machineryHours} onChange={e=>setMachineryHours(e.target.value)} />
-              </div>
-              <div className="sm:col-span-2">
-                <button type="submit" className="w-full h-11 bg-primary text-primary-foreground font-semibold rounded-xl text-sm hover:bg-primary/95 transition cursor-pointer">
-                  Request Custom Hiring Booking
-                </button>
-              </div>
-            </form>
-            {machineryBooked && (
-              <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-center gap-2">
-                <CheckCircle2 className="size-5 text-amber-600 shrink-0" />
-                <span>Booking request confirmed! Local Satara SMAM Custom Hiring operator will call your registered phone to confirm delivery time.</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTool === "buyer" && (
-          <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm animate-fade-in max-w-2xl mx-auto w-full mt-2">
-            <div className="flex items-center gap-2 mb-4 border-b border-border pb-3">
-              <ShoppingBag className="size-5 text-violet-600" />
-              <h3 className="text-base lg:text-lg font-bold text-primary">Direct Produce Listing to Verified FPOs</h3>
-            </div>
-            <form onSubmit={handleProduceListing} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground block mb-1">Crop</label>
-                <select className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" value={listingCrop} onChange={e=>setListingCrop(e.target.value)}>
-                  <option value="Soybean">Soybean</option>
-                  <option value="Cotton">Cotton</option>
-                  <option value="Turmeric">Turmeric</option>
-                  <option value="Sugarcane">Sugarcane</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground block mb-1">Quantity (Quintals)</label>
-                <input type="number" min="5" className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" value={listingQty} onChange={e=>setListingQty(e.target.value)} />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground block mb-1">Asking Price (₹/Qtl)</label>
-                <input type="number" min="1000" className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" value={listingPrice} onChange={e=>setListingPrice(e.target.value)} />
-              </div>
-              <div className="sm:col-span-3">
-                <button type="submit" className="w-full h-11 bg-primary text-primary-foreground font-semibold rounded-xl text-sm hover:bg-primary/95 transition cursor-pointer">
-                  Publish Produce Listing to FPO Buyers
-                </button>
-              </div>
-            </form>
-            {listingSuccess && (
-              <div className="mt-4 p-4 bg-violet-50 border border-violet-200 rounded-xl text-xs text-violet-900 flex items-center gap-2">
-                <CheckCircle2 className="size-5 text-violet-600 shrink-0" />
-                <span>Your harvest offer ({listingQty} Qtl {listingCrop} @ ₹{listingPrice}/Qtl) is live on AgriSphere FPO Connect! 2 regional buyers notified.</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTool === "kcc" && (
-          <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm animate-fade-in max-w-2xl mx-auto w-full mt-2">
-            <div className="flex items-center gap-2 mb-4 border-b border-border pb-3">
-              <Coins className="size-5 text-teal-600" />
-              <h3 className="text-base lg:text-lg font-bold text-primary">Kisan Credit Card (KCC) 4% Net Interest Subvention Helper</h3>
-            </div>
-            <form onSubmit={calculateKcc} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground block mb-1">Desired KCC Loan Amount (₹)</label>
-                <input type="number" step="10000" min="10000" max="300000" className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" value={kccAmount} onChange={e=>setKccAmount(e.target.value)} />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground block mb-1">Govt Prompt Subvention</label>
-                <input type="text" disabled className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-accent text-muted-foreground font-semibold" value="3% p.a. Prompt Rebate" />
-              </div>
-              <div className="sm:col-span-2">
-                <button type="submit" className="w-full h-11 bg-primary text-primary-foreground font-semibold rounded-xl text-sm hover:bg-primary/95 transition cursor-pointer">
-                  Calculate Effective Interest Savings
-                </button>
-              </div>
-            </form>
-            {kccResult && (
-              <div className="mt-4 p-4 bg-teal-50/60 border border-teal-200 rounded-xl text-xs flex flex-col gap-2">
-                <div className="font-bold text-teal-900 text-sm">KCC Loan Interest Breakdown for {kccResult.amount}:</div>
-                <div className="grid grid-cols-2 gap-2 mt-1">
-                  <div className="bg-white p-2.5 rounded-lg border border-teal-200">
-                    <span className="text-[10px] text-muted-foreground block">Net Annual Interest (4%)</span>
-                    <span className="text-base font-extrabold text-teal-700">{kccResult.annualInterest}</span>
-                  </div>
-                  <div className="bg-white p-2.5 rounded-lg border border-teal-200">
-                    <span className="text-[10px] text-muted-foreground block">Govt Subvention Savings</span>
-                    <span className="text-base font-extrabold text-emerald-600">{kccResult.saved}</span>
-                  </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">Area (Acres) *</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0.1"
+                    required
+                    placeholder="e.g. 4.5"
+                    className="w-full border border-border rounded-xl px-3 py-2 text-sm bg-background"
+                    value={area}
+                    onChange={e => setArea(e.target.value)}
+                  />
                 </div>
-              </div>
-            )}
-          </div>
-        )}
 
-        {activeTool === "organic" && (
-          <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm animate-fade-in max-w-2xl mx-auto w-full mt-2">
-            <div className="flex items-center gap-2 mb-4 border-b border-border pb-3">
-              <Leaf className="size-5 text-lime-600" />
-              <h3 className="text-base lg:text-lg font-bold text-primary">Jeevamrut & PKVY Bio-Input Recipe Guide</h3>
-            </div>
-            <div className="space-y-3 text-xs">
-              <div className="p-3 bg-lime-50 border border-lime-200 rounded-xl text-lime-900">
-                <h4 className="font-bold text-sm text-lime-950 mb-1">🥛 Jeevamrut Preparation (200 Litres for 1 Acre):</h4>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>200 Litres Water + 10 Kg Fresh Cow Dung + 10 Litres Cow Urine</li>
-                  <li>2 Kg Jaggery (Gur) + 2 Kg Pulse Flour (Besan) + 1 Handful Virgin Soil</li>
-                  <li>Stir clockwise 2 times daily; keep under shade for 48-72 hours before applying via drip or irrigation channel.</li>
-                </ul>
-              </div>
-              <div className="p-3 bg-accent border border-border rounded-xl">
-                <h4 className="font-bold text-sm text-primary mb-1">📜 PKVY Organic Group Registration:</h4>
-                <p>Register your Satara farmer cluster (50 farmers minimum) to receive ₹31,000/ha government grant for organic conversion and branding.</p>
-              </div>
-            </div>
-          </div>
-        )}
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">Season</label>
+                  <select
+                    className="w-full border border-border rounded-xl px-3 py-2 text-sm bg-background"
+                    value={season}
+                    onChange={e => setSeason(e.target.value)}
+                  >
+                    <option value="Kharif">Kharif (Monsoon)</option>
+                    <option value="Rabi">Rabi (Winter)</option>
+                    <option value="Zaid">Zaid (Summer)</option>
+                    <option value="Annual">Annual (Perennial)</option>
+                  </select>
+                </div>
 
-        {activeTool === "solar" && (
-          <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm animate-fade-in max-w-2xl mx-auto w-full mt-2">
-            <div className="flex items-center gap-2 mb-4 border-b border-border pb-3">
-              <Sun className="size-5 text-orange-600" />
-              <h3 className="text-base lg:text-lg font-bold text-primary">PM-KUSUM 90% Subsidized Solar Pump Eligibility</h3>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              <div className="p-3 bg-orange-50 border border-orange-200 rounded-xl text-center">
-                <span className="font-bold block text-sm text-orange-950">3 HP Solar Pump</span>
-                <span className="text-[11px] text-muted-foreground block mt-0.5">Govt Pays: 90% (₹1,48,000)</span>
-                <span className="font-extrabold text-primary block mt-1">Farmer Share: ₹16,500</span>
-              </div>
-              <div className="p-3 bg-orange-50 border border-orange-200 rounded-xl text-center">
-                <span className="font-bold block text-sm text-orange-950">5 HP Solar Pump</span>
-                <span className="text-[11px] text-muted-foreground block mt-0.5">Govt Pays: 90% (₹2,10,000)</span>
-                <span className="font-extrabold text-primary block mt-1">Farmer Share: ₹23,300</span>
-              </div>
-              <div className="p-3 bg-orange-50 border border-orange-200 rounded-xl text-center">
-                <span className="font-bold block text-sm text-orange-950">7.5 HP Solar Pump</span>
-                <span className="text-[11px] text-muted-foreground block mt-0.5">Govt Pays: 90% (₹2,95,000)</span>
-                <span className="font-extrabold text-primary block mt-1">Farmer Share: ₹32,800</span>
-              </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">Status</label>
+                  <select
+                    className="w-full border border-border rounded-xl px-3 py-2 text-sm bg-background"
+                    value={status}
+                    onChange={e => setStatus(e.target.value)}
+                  >
+                    <option value="Sown">Sown</option>
+                    <option value="Growing">Growing</option>
+                    <option value="Flowering">Flowering</option>
+                    <option value="Harvesting">Harvesting</option>
+                    <option value="Harvested">Harvested</option>
+                    <option value="Fallow">Fallow</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">Soil Type</label>
+                  <select
+                    className="w-full border border-border rounded-xl px-3 py-2 text-sm bg-background"
+                    value={soilType}
+                    onChange={e => setSoilType(e.target.value)}
+                  >
+                    <option value="Black Cotton Soil">Black Cotton Soil</option>
+                    <option value="Loamy Soil">Loamy Soil</option>
+                    <option value="Red Sandy Soil">Red Sandy Soil</option>
+                    <option value="Alluvial Soil">Alluvial Soil</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">Planting Date</label>
+                  <input
+                    type="date"
+                    className="w-full border border-border rounded-xl px-3 py-2 text-sm bg-background"
+                    value={plantingDate}
+                    onChange={e => setPlantingDate(e.target.value)}
+                  />
+                </div>
+
+                <div className="sm:col-span-2 flex items-center justify-end gap-2 mt-3 pt-3 border-t border-border">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="h-10 px-4 border border-border rounded-xl text-xs font-semibold hover:bg-muted transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="h-10 px-5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl text-xs transition cursor-pointer"
+                  >
+                    {isSubmitting ? "Saving..." : editingFarm ? "Save Changes" : "Create Farm Record"}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
@@ -1701,37 +1718,14 @@ function ServicesView({ selectedService, setSelectedService, mounted }: { select
 
   return (
     <div className="flex flex-col gap-4 w-full">
-      <button onClick={() => { setSelectedService(null); setAdvice(null); setEligible(null); setInsResult(null); }} className="flex items-center gap-1.5 text-xs text-primary font-bold mr-auto bg-accent hover:bg-accent/80 px-3 py-1.5 rounded-lg transition">
-        <ArrowLeft className="size-3.5" /> Back to Services
+      <button onClick={() => { setSelectedService(null); }} className="flex items-center gap-1.5 text-xs text-primary font-bold mr-auto bg-accent hover:bg-accent/80 px-3 py-1.5 rounded-lg transition cursor-pointer">
+        <ArrowLeft className="size-3.5" /> Back to Farm Management
       </button>
 
       {selectedService === "crop-advice" && (
         <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm max-w-xl mx-auto w-full">
           <h3 className="text-[17px] font-bold text-primary mb-3">AI Crop Adviser</h3>
-          <form onSubmit={handleAdvice} className="flex flex-col gap-3">
-            <select className="border border-border rounded-lg px-3 py-2 text-sm bg-white" value={crop} onChange={e=>setCrop(e.target.value)}>
-              <option value="">-- Choose Crop --</option>
-              <option value="Soybean">Soybean</option>
-              <option value="Wheat">Wheat</option>
-              <option value="Sugarcane">Sugarcane</option>
-            </select>
-            <select className="border border-border rounded-lg px-3 py-2 text-sm bg-white" value={stage} onChange={e=>setStage(e.target.value)}>
-              <option value="">-- Choose Growth Stage --</option>
-              <option value="Sowing">Sowing / Planting</option>
-              <option value="Flowering">Flowering / Heading</option>
-              <option value="Harvesting">Harvesting</option>
-            </select>
-            <textarea className="border border-border rounded-lg px-3 py-2 text-sm bg-white" placeholder="Describe symptoms or moisture conditions (optional)..." value={notes} onChange={e=>setNotes(e.target.value)} />
-            <button type="submit" className="h-11 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/95 transition text-sm">
-              {adviceLoading ? "Compiling Advice..." : "Request AI Recommendation"}
-            </button>
-          </form>
-          {advice && (
-            <div className="mt-4 p-4 border border-border bg-accent/40 rounded-xl text-sm animate-fade-in">
-              <h4 className="font-bold text-primary mb-1 text-[13px] flex items-center gap-1"><Info className="size-4" /> AI Advice Result</h4>
-              <p className="text-foreground/90 text-xs leading-relaxed mt-1">{advice}</p>
-            </div>
-          )}
+          <p className="text-xs text-muted-foreground">Select crop and growth stage for AI recommendation.</p>
         </div>
       )}
 

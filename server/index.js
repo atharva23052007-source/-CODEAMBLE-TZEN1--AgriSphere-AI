@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import multer from "multer";
 import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
 import { HfInference } from "@huggingface/inference";
 import { getCache, setCache, isRedisConnected } from "./redis.js";
 
@@ -800,6 +802,191 @@ app.post("/api/crop-insurance/calculate", (req, res) => {
     });
   } catch (err) {
     return res.status(400).json({ status: "error", message: err.message });
+  }
+});
+
+/**
+ * Persistent Store & CRUD API for Farmer Farm/Crop Management
+ */
+const FARMS_DATA_DIR = path.join(process.cwd(), ".data");
+const FARMS_FILE_PATH = path.join(FARMS_DATA_DIR, "farms_db.json");
+
+const INITIAL_FARMS_STORE = [
+  {
+    id: "FARM-101",
+    farmerId: "farmer_patil",
+    farmName: "Satara Main Field",
+    cropName: "Soybean (JS-335)",
+    area: 4.5,
+    season: "Kharif",
+    status: "Growing",
+    soilType: "Black Cotton Soil",
+    plantingDate: "2026-06-15",
+    updatedAt: "2026-08-08"
+  },
+  {
+    id: "FARM-102",
+    farmerId: "farmer_patil",
+    farmName: "Koregaon Riverside",
+    cropName: "Sugarcane (Co-86032)",
+    area: 6.0,
+    season: "Annual",
+    status: "Sown",
+    soilType: "Loamy Soil",
+    plantingDate: "2026-01-20",
+    updatedAt: "2026-08-08"
+  },
+  {
+    id: "FARM-103",
+    farmerId: "farmer_patil",
+    farmName: "Wai Hillside Plot",
+    cropName: "Turmeric (Rajapuri)",
+    area: 2.5,
+    season: "Kharif",
+    status: "Flowering",
+    soilType: "Red Sandy Soil",
+    plantingDate: "2026-05-10",
+    updatedAt: "2026-08-08"
+  },
+  {
+    id: "FARM-104",
+    farmerId: "farmer_patil",
+    farmName: "North Acre Plot",
+    cropName: "Wheat (Sharbati)",
+    area: 3.0,
+    season: "Rabi",
+    status: "Harvested",
+    soilType: "Alluvial Soil",
+    plantingDate: "2025-11-15",
+    updatedAt: "2026-08-08"
+  }
+];
+
+function loadFarmsFromStore() {
+  try {
+    if (!fs.existsSync(FARMS_DATA_DIR)) {
+      fs.mkdirSync(FARMS_DATA_DIR, { recursive: true });
+    }
+    if (fs.existsSync(FARMS_FILE_PATH)) {
+      const data = fs.readFileSync(FARMS_FILE_PATH, "utf-8");
+      return JSON.parse(data);
+    }
+  } catch (err) {
+    console.warn("[Farms DB Warning] Unable to read farms JSON file:", err.message);
+  }
+  saveFarmsToStore(INITIAL_FARMS_STORE);
+  return INITIAL_FARMS_STORE;
+}
+
+function saveFarmsToStore(farms) {
+  try {
+    if (!fs.existsSync(FARMS_DATA_DIR)) {
+      fs.mkdirSync(FARMS_DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(FARMS_FILE_PATH, JSON.stringify(farms, null, 2), "utf-8");
+  } catch (err) {
+    console.error("[Farms DB Error] Unable to write farms JSON file:", err.message);
+  }
+}
+
+/**
+ * GET /api/farms
+ */
+app.get("/api/farms", (req, res) => {
+  try {
+    const farms = loadFarmsFromStore();
+    return res.json({ status: "success", count: farms.length, farms });
+  } catch (err) {
+    return res.status(500).json({ status: "error", message: err.message });
+  }
+});
+
+/**
+ * POST /api/farms
+ */
+app.post("/api/farms", (req, res) => {
+  try {
+    const { farmName, cropName, area, season = "Kharif", status = "Growing", soilType = "Loamy", plantingDate = "" } = req.body || {};
+
+    if (!farmName || !cropName || !area) {
+      return res.status(400).json({ status: "error", message: "farmName, cropName, and area are required." });
+    }
+
+    const farms = loadFarmsFromStore();
+    const newFarm = {
+      id: `FARM-${Date.now().toString().slice(-5)}`,
+      farmerId: "farmer_patil",
+      farmName: farmName.trim(),
+      cropName: cropName.trim(),
+      area: parseFloat(area) || 1.0,
+      season,
+      status,
+      soilType: soilType || "Loamy",
+      plantingDate: plantingDate || new Date().toISOString().split("T")[0],
+      updatedAt: new Date().toISOString().split("T")[0]
+    };
+
+    farms.unshift(newFarm);
+    saveFarmsToStore(farms);
+
+    return res.status(201).json({ status: "success", message: "Farm record created successfully!", farm: newFarm });
+  } catch (err) {
+    return res.status(500).json({ status: "error", message: err.message });
+  }
+});
+
+/**
+ * PUT /api/farms/:id
+ */
+app.put("/api/farms/:id", (req, res) => {
+  try {
+    const { id } = req.params;
+    const { farmName, cropName, area, season, status, soilType, plantingDate } = req.body || {};
+
+    const farms = loadFarmsFromStore();
+    const idx = farms.findIndex(f => f.id === id);
+
+    if (idx === -1) {
+      return res.status(404).json({ status: "error", message: "Farm record not found." });
+    }
+
+    if (farmName) farms[idx].farmName = farmName.trim();
+    if (cropName) farms[idx].cropName = cropName.trim();
+    if (area !== undefined) farms[idx].area = parseFloat(area) || farms[idx].area;
+    if (season) farms[idx].season = season;
+    if (status) farms[idx].status = status;
+    if (soilType) farms[idx].soilType = soilType;
+    if (plantingDate) farms[idx].plantingDate = plantingDate;
+    farms[idx].updatedAt = new Date().toISOString().split("T")[0];
+
+    saveFarmsToStore(farms);
+
+    return res.json({ status: "success", message: "Farm record updated successfully!", farm: farms[idx] });
+  } catch (err) {
+    return res.status(500).json({ status: "error", message: err.message });
+  }
+});
+
+/**
+ * DELETE /api/farms/:id
+ */
+app.delete("/api/farms/:id", (req, res) => {
+  try {
+    const { id } = req.params;
+    let farms = loadFarmsFromStore();
+    const initialLen = farms.length;
+
+    farms = farms.filter(f => f.id !== id);
+
+    if (farms.length === initialLen) {
+      return res.status(404).json({ status: "error", message: "Farm record not found." });
+    }
+
+    saveFarmsToStore(farms);
+
+    return res.json({ status: "success", message: "Farm record deleted successfully!", id });
+  } catch (err) {
+    return res.status(500).json({ status: "error", message: err.message });
   }
 });
 
