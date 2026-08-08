@@ -19,51 +19,58 @@ import { toast } from "sonner";
 import { Toaster } from "../components/ui/sonner";
 import logoImg from "@/assets/logo.png";
 
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getAdminAppraisals, approveAdminAppraisal, rejectAdminAppraisal } from "../lib/adminServerFns";
+
 export const Route = createFileRoute("/officer")({
   component: OfficerDashboard,
 });
 
 function OfficerDashboard() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"appraisal" | "fertilizer" | "aadhaar">("appraisal");
   const [searchTerm, setSearchTerm] = useState("");
-  const [appraisals, setAppraisals] = useState([
-    { id: "DBT-882", name: "Satara FPO Cotton Aid", farmers: 84, amount: "₹4,20,000", submittedBy: "Operator #12-D", status: "Pending" },
-    { id: "DBT-883", name: "Koregaon Wheat Subsidy", farmers: 120, amount: "₹8,50,000", submittedBy: "Operator #09-A", status: "Pending" },
-    { id: "DBT-884", name: "Wai Soybean Machinery", farmers: 12, amount: "₹3,15,000", submittedBy: "Operator #03-F", status: "Approved" },
-    { id: "DBT-885", name: "Jawali General Crop Bima", farmers: 310, amount: "₹24,50,000", submittedBy: "Operator #11-B", status: "Approved" },
-    { id: "DBT-886", name: "Mahabaleshwar Cold Storage", farmers: 4, amount: "₹5,00,050", submittedBy: "Operator #04-C", status: "Pending" },
-  ]);
 
-  const [fertilizerLogs] = useState([
-    { id: "FL-101", date: "2026-08-01", district: "Satara", farmerId: "F-9921", type: "Urea", quantity: "150 kg", subsidy: "₹1,200" },
-    { id: "FL-102", date: "2026-08-02", district: "Pune", farmerId: "F-3120", type: "DAP", quantity: "50 kg", subsidy: "₹800" },
-    { id: "FL-103", date: "2026-08-03", district: "Sangli", farmerId: "F-8411", type: "Urea", quantity: "200 kg", subsidy: "₹1,600" },
-    { id: "FL-104", date: "2026-08-04", district: "Kolhapur", farmerId: "F-5092", type: "MOP", quantity: "100 kg", subsidy: "₹950" },
-    { id: "FL-105", date: "2026-08-05", district: "Satara", farmerId: "F-1102", type: "NPK", quantity: "75 kg", subsidy: "₹1,100" },
-  ]);
+  const { data: appData } = useQuery({
+    queryKey: ["adminAppraisals"],
+    queryFn: () => getAdminAppraisals(),
+    refetchInterval: 15_000,
+    staleTime: 5_000,
+  });
 
-  const [aadhaarAudits] = useState([
-    { id: "AL-901", timestamp: "2026-08-07 10:15:22", action: "e-KYC Verification", aadhaarLast4: "4921", status: "Success", operator: "Op-12-D" },
-    { id: "AL-902", timestamp: "2026-08-07 11:42:09", action: "Subsidy Claim Auth", aadhaarLast4: "1833", status: "Failed", operator: "Op-09-A" },
-    { id: "AL-903", timestamp: "2026-08-08 09:05:41", action: "Bank Acc Linking", aadhaarLast4: "7720", status: "Success", operator: "Op-03-F" },
-    { id: "AL-904", timestamp: "2026-08-08 09:30:12", action: "e-KYC Verification", aadhaarLast4: "3199", status: "Success", operator: "Op-11-B" },
-    { id: "AL-905", timestamp: "2026-08-08 14:21:05", action: "Subsidy Claim Auth", aadhaarLast4: "8801", status: "Success", operator: "Op-04-C" },
-  ]);
+  const appraisals = appData?.appraisals || [];
+  const fertilizerLogs = appData?.fertilizer || [];
+  const aadhaarAudits = appData?.aadhaar || [];
 
-  const handleApprove = (id: string, name: string) => {
-    setAppraisals(appraisals.map(a => a.id === id ? { ...a, status: "Approved" } : a));
-    const txId = Math.random().toString(16).substring(2, 10).toUpperCase();
-    toast.success(`Approved ${name}!`, {
-      description: `DBT Disbursed. Cryptographic Tx Hash: TX-${txId}`,
-    });
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ["adminAppraisals"] });
+    queryClient.invalidateQueries({ queryKey: ["adminOverview"] });
   };
 
-  const handleReject = (id: string, name: string) => {
-    setAppraisals(appraisals.map(a => a.id === id ? { ...a, status: "Rejected" } : a));
-    toast.error(`Rejected ${name}.`, {
-      description: `Returned request back to operator queue.`,
-    });
+  const handleApprove = async (id: string, name: string) => {
+    try {
+      await approveAdminAppraisal({ data: { id } });
+      invalidateAll();
+      const txId = Math.random().toString(16).substring(2, 10).toUpperCase();
+      toast.success(`Approved ${name} in MongoDB!`, {
+        description: `DBT Disbursed. Cryptographic Tx Hash: TX-${txId}`,
+      });
+    } catch {
+      toast.error(`Approval failed for ${name}.`);
+    }
+  };
+
+  const handleReject = async (id: string, name: string) => {
+    try {
+      await rejectAdminAppraisal({ data: { id } });
+      invalidateAll();
+      toast.error(`Rejected ${name} in MongoDB.`, {
+        description: `Returned request back to operator queue.`,
+      });
+    } catch {
+      toast.error(`Rejection failed for ${name}.`);
+    }
   };
 
   const handleLogout = () => {

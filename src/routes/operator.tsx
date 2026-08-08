@@ -26,6 +26,16 @@ import { toast } from "sonner";
 import { Toaster } from "../components/ui/sonner";
 import logoImg from "@/assets/logo.png";
 
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  getAdminFarmers,
+  getAdminLandExtracts,
+  addAdminFarmer,
+  verifyAdminFarmerLand,
+  linkAdminFarmerScheme,
+  auditAdminLandExtract,
+} from "../lib/adminServerFns";
+
 export const Route = createFileRoute("/operator")({
   component: OperatorDashboard,
 });
@@ -34,29 +44,33 @@ type TabType = "registry" | "land" | "dbt";
 
 function OperatorDashboard() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabType>("registry");
   const [searchTerm, setSearchTerm] = useState("");
-  
-  // Farmers registry database
-  const [farmers, setFarmers] = useState([
-    { id: "F-102", name: "Rajesh Patil", land: 5.5, crop: "Soybean", village: "Satara", status: "Verified", dbtStatus: "Linked", aadhaarSeeded: "Verified ✓", bank: "SBI ****092", schemes: ["PM-Kisan", "Fasal Bima"] },
-    { id: "F-103", name: "Sanjay Deshmukh", land: 8.2, crop: "Sugarcane", village: "Satara", status: "Verified", dbtStatus: "Processing", aadhaarSeeded: "Verified ✓", bank: "MGB ****114", schemes: ["PM-Kisan"] },
-    { id: "F-104", name: "Ramesh Pawar", land: 3.1, crop: "Cotton", village: "Wai", status: "Pending", dbtStatus: "Failed", aadhaarSeeded: "Not Seeded ⚠", bank: "BOI ****896", schemes: [] },
-    { id: "F-105", name: "Ananda Shinde", land: 6.0, crop: "Wheat", village: "Koregaon", status: "Verified", dbtStatus: "Linked", aadhaarSeeded: "Verified ✓", bank: "SBI ****312", schemes: ["PM-Kisan", "Solar Pump"] },
-    { id: "F-106", name: "Dilip Mohite", land: 4.5, crop: "Soybean", village: "Wai", status: "Pending", dbtStatus: "Unapplied", aadhaarSeeded: "Verified ✓", bank: "HDFC ****551", schemes: [] },
-  ]);
 
-  // Land extracts detailed database
-  const [landExtracts, setLandExtracts] = useState([
-    { id: "LND-201", farmerId: "F-102", farmerName: "Rajesh Patil", surveyNo: "145/2/A", acreage: 5.5, soil: "Black Cotton Soil (High Organic)", cropSuitability: "Excellent for Soybean & Cotton", file: "7-12-SATARA-145.pdf", inspected: true },
-    { id: "LND-202", farmerId: "F-103", farmerName: "Sanjay Deshmukh", surveyNo: "88/1/B", acreage: 8.2, soil: "Alluvial Clay loam (Loamy)", cropSuitability: "Ideal for Sugarcane & Wheat", file: "7-12-SATARA-88.pdf", inspected: true },
-    { id: "LND-203", farmerId: "F-104", farmerName: "Ramesh Pawar", surveyNo: "201/C", acreage: 3.1, soil: "Red Sandy Soil (Low Moisture)", cropSuitability: "Moderate for Cotton, requires irrigation", file: "7-12-WAI-201.pdf", inspected: false },
-    { id: "LND-204", farmerId: "F-105", farmerName: "Ananda Shinde", surveyNo: "542/3", acreage: 6.0, soil: "Deep Silt loam (Rich Nitrogen)", cropSuitability: "Excellent for Wheat & Gram pulses", file: "7-12-KORG-542.pdf", inspected: true },
-    { id: "LND-205", farmerId: "F-106", farmerName: "Dilip Mohite", surveyNo: "90/A", acreage: 4.5, soil: "Sandy Loam", cropSuitability: "Good for Oilseeds & Soybean", file: "7-12-WAI-90.pdf", inspected: false },
-  ]);
+  // MongoDB Queries with 15s refetch so Super Admin & Operator stay in sync
+  const { data: farmers = [] } = useQuery({
+    queryKey: ["adminFarmers"],
+    queryFn: () => getAdminFarmers(),
+    refetchInterval: 15_000,
+    staleTime: 5_000,
+  });
+
+  const { data: landExtracts = [] } = useQuery({
+    queryKey: ["adminLandExtracts"],
+    queryFn: () => getAdminLandExtracts(),
+    refetchInterval: 15_000,
+    staleTime: 5_000,
+  });
+
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ["adminFarmers"] });
+    queryClient.invalidateQueries({ queryKey: ["adminLandExtracts"] });
+    queryClient.invalidateQueries({ queryKey: ["adminOverview"] });
+  };
 
   // Selected land extract for modal inspection
-  const [inspectingLand, setInspectingLand] = useState<typeof landExtracts[0] | null>(null);
+  const [inspectingLand, setInspectingLand] = useState<any | null>(null);
 
   // New Farmer Form Inputs
   const [newFarmerName, setNewFarmerName] = useState("");
@@ -68,77 +82,72 @@ function OperatorDashboard() {
   // Scheme Linking loaders state
   const [linkingSchemeId, setLinkingSchemeId] = useState<string | null>(null);
 
-  const handleAddFarmer = (e: React.FormEvent) => {
+  const handleAddFarmer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newFarmerName || !newFarmerLand || !newFarmerVillage) {
       toast.error("Please fill in all farmer details.");
       return;
     }
-    const newId = `F-${Math.floor(100 + Math.random() * 899)}`;
     const acreageNum = parseFloat(newFarmerLand);
-    const newF = {
-      id: newId,
-      name: newFarmerName,
-      land: acreageNum,
-      crop: newFarmerCrop,
-      village: newFarmerVillage,
-      status: "Pending",
-      dbtStatus: "Unapplied",
-      aadhaarSeeded: "Verified ✓",
-      bank: newFarmerBank,
-      schemes: [],
-    };
-    setFarmers([newF, ...farmers]);
-
-    // Automatically create a corresponding land record
-    const newL = {
-      id: `LND-${Math.floor(200 + Math.random() * 799)}`,
-      farmerId: newId,
-      farmerName: newFarmerName,
-      surveyNo: `${Math.floor(100 + Math.random() * 400)}/A`,
-      acreage: acreageNum,
-      soil: "Medium Black (Uninspected)",
-      cropSuitability: `Suitable for ${newFarmerCrop}`,
-      file: `7-12-TEMP-${newId}.pdf`,
-      inspected: false,
-    };
-    setLandExtracts([newL, ...landExtracts]);
-
-    toast.success(`Successfully enrolled ${newFarmerName} in FPO Registry!`);
-    setNewFarmerName("");
-    setNewFarmerLand("");
-    setNewFarmerVillage("");
+    try {
+      await addAdminFarmer({
+        data: {
+          name: newFarmerName,
+          land: acreageNum,
+          crop: newFarmerCrop,
+          village: newFarmerVillage,
+          status: "Pending",
+          dbtStatus: "Unapplied",
+          aadhaarSeeded: "Verified ✓",
+          bank: newFarmerBank,
+          schemes: [],
+        },
+      });
+      invalidateAll();
+      toast.success(`Successfully enrolled ${newFarmerName} in MongoDB Atlas Registry!`);
+      setNewFarmerName("");
+      setNewFarmerLand("");
+      setNewFarmerVillage("");
+    } catch {
+      toast.error("Failed to enroll farmer in MongoDB.");
+    }
   };
 
-  const verifyFarmer = (id: string, name: string) => {
-    setFarmers(farmers.map(f => f.id === id ? { ...f, status: "Verified" } : f));
-    // Set matching land records to inspected
-    setLandExtracts(landExtracts.map(l => l.farmerId === id ? { ...l, inspected: true } : l));
-    toast.success(`Land registry details verified for ${name}!`);
+  const verifyFarmer = async (id: string, name: string) => {
+    try {
+      await verifyAdminFarmerLand({ data: { farmerId: id } });
+      invalidateAll();
+      toast.success(`Land registry details verified in MongoDB for ${name}!`);
+    } catch {
+      toast.error("Verification update failed.");
+    }
   };
 
-  const handleModalApprove = () => {
+  const handleModalApprove = async () => {
     if (!inspectingLand) return;
-    verifyFarmer(inspectingLand.farmerId, inspectingLand.farmerName);
-    setLandExtracts(landExtracts.map(l => l.id === inspectingLand.id ? { ...l, inspected: true } : l));
-    setInspectingLand(null);
+    try {
+      await auditAdminLandExtract({ data: { extractId: inspectingLand.id } });
+      invalidateAll();
+      toast.success(`Audit passed & saved to MongoDB for ${inspectingLand.farmerName}!`);
+      setInspectingLand(null);
+    } catch {
+      toast.error("Audit update failed.");
+    }
   };
 
-  const handleLinkScheme = (farmerId: string, schemeName: string) => {
+  const handleLinkScheme = async (farmerId: string, schemeName: string) => {
     setLinkingSchemeId(`${farmerId}-${schemeName}`);
-    setTimeout(() => {
-      setFarmers(farmers.map(f => {
-        if (f.id === farmerId) {
-          const updatedSchemes = f.schemes.includes(schemeName) ? f.schemes : [...f.schemes, schemeName];
-          return { ...f, schemes: updatedSchemes, dbtStatus: "Linked" };
-        }
-        return f;
-      }));
-      setLinkingSchemeId(null);
-      toast.success(`Direct Benefit Transfer (DBT) scheme successfully linked!`, {
+    try {
+      await linkAdminFarmerScheme({ data: { farmerId, schemeName } });
+      invalidateAll();
+      toast.success(`Direct Benefit Transfer (DBT) scheme successfully linked in MongoDB!`, {
         description: `Linked ${schemeName} for the benefit account of farmer. Payout cycles synchronized.`,
       });
-    }, 1200);
+    } catch {
+      toast.error("Scheme link failed.");
+    } finally {
+      setLinkingSchemeId(null);
+    }
   };
 
   const handleLogout = () => {

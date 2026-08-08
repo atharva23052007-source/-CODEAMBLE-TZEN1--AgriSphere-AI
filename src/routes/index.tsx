@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Sprout, Building2, Handshake, ArrowRight, ShieldAlert, BadgeAlert } from "lucide-react";
+import { Sprout, Building2, Handshake, ArrowRight, ShieldAlert, BadgeAlert, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "../components/ui/sonner";
 import logoImg from "@/assets/logo.png";
@@ -126,7 +126,7 @@ function RoleSelection() {
 
                 {/* Confirm Button */}
                 <Link
-                  to={c.to}
+                  to={c.to as any}
                   className={`mt-4 w-full h-11 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-200 border shadow-sm ${
                     c.color === "green" 
                       ? "bg-accent/80 hover:bg-accent text-primary border-primary/20 hover:border-primary/40" 
@@ -168,8 +168,11 @@ function RoleSelection() {
         </footer>
       </div>
 
-      <div className="text-center text-[10px] text-muted-foreground mt-8">
-        © 2026 AgriSphere AI Portal. All Rights Secured under DBT Smart Farmer Framework.
+      <div className="text-center text-[10px] text-muted-foreground mt-8 flex flex-col items-center gap-1">
+        <span>© 2026 AgriSphere AI Portal. All Rights Secured under DBT Smart Farmer Framework.</span>
+        <Link to="/login/admin" className="hover:underline text-[9px] text-muted-foreground/60 hover:text-primary transition">
+          Platform Owner Portal (Admin Access)
+        </Link>
       </div>
     </div>
   );

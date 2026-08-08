@@ -13,7 +13,9 @@ import {
   ArrowRight,
   Navigation,
   Plus,
-  Store
+  Store,
+  AlertTriangle,
+  X
 } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "../components/ui/sonner";
@@ -44,6 +46,11 @@ function BuyerDashboard() {
   const [processingActionId, setProcessingActionId] = useState<string | null>(null);
   const [isSubmittingListing, setIsSubmittingListing] = useState(false);
 
+  // Confirmation modal state
+  const [confirmModal, setConfirmModal] = useState<{
+    id: string; crop: string; qty: string; price: string; cert: string; fpo: string;
+  } | null>(null);
+
   // Seller Listing Form State
   const [newListing, setNewListing] = useState({
     crop: "",
@@ -52,6 +59,22 @@ function BuyerDashboard() {
     cert: "",
     location: "",
   });
+  const [priceUnit, setPriceUnit] = useState("Quintal");
+  const [certType, setCertType] = useState("");
+
+  const PRICE_UNITS = ["Quintal", "Ton", "Kg", "Metric Ton (MT)", "Acre"];
+  const CERT_OPTIONS = [
+    "Organic Certified (NPOP)",
+    "Quality Grade-A A+ Passed",
+    "AGMARK Graded",
+    "ISO 22000 Food Safety",
+    "FSSAI Compliant",
+    "GlobalG.A.P Certified",
+    "Fair Trade Certified",
+    "Residue-Free Certified",
+    "Non-GMO Verified",
+    "India Organic Certificate",
+  ];
 
   // Current Users
   const TRADER_ID = "trader_1";
@@ -80,8 +103,15 @@ function BuyerDashboard() {
   );
 
   // ---- TRADER ACTIONS ----
-  const handleBuy = async (id: string, crop: string, qty: string) => {
+  const openConfirm = (l: { id: string; crop: string; qty: string; price: string; cert: string; fpo: string }) => {
     if (processingActionId) return;
+    setConfirmModal(l);
+  };
+
+  const confirmBuy = async () => {
+    if (!confirmModal || processingActionId) return;
+    const { id, crop, qty } = confirmModal;
+    setConfirmModal(null);
     setProcessingActionId(id);
     try {
       await buyListing(id, TRADER_ID);
@@ -142,13 +172,18 @@ function BuyerDashboard() {
     }
     setIsSubmittingListing(true);
     try {
+      const composedPrice = newListing.price ? `₹${newListing.price.replace(/[₹,]/g, "")} / ${priceUnit}` : "";
+      const composedCert = certType || newListing.cert;
       await addListing({
         ...newListing,
+        price: composedPrice,
+        cert: composedCert,
         fpo: "Satara Farmers Coop",
         sellerId: SELLER_ID,
       });
       toast.success("Harvest Listing Published!");
       setNewListing({ crop: "", qty: "", price: "", cert: "", location: "" });
+      setCertType("");
     } finally {
       setIsSubmittingListing(false);
     }
@@ -439,7 +474,7 @@ function BuyerDashboard() {
                                 {l.status === "Available" ? (
                                   <button
                                     disabled={processingActionId === l.id}
-                                    onClick={() => handleBuy(l.id, l.crop, l.qty)}
+                                    onClick={() => openConfirm(l)}
                                     className={`px-2.5 py-1 text-[10px] font-bold text-white bg-tile-amber-icon rounded-md transition shadow-sm cursor-pointer ${
                                       processingActionId === l.id ? "opacity-50 cursor-not-allowed" : "hover:bg-tile-amber-icon/90 hover:scale-103"
                                     }`}
@@ -656,11 +691,49 @@ function BuyerDashboard() {
                       </div>
                       <div>
                         <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Expected Price</label>
-                        <input required type="text" className="w-full px-3 py-2 border border-border rounded-xl text-xs bg-white" placeholder="e.g. ₹5,000 / Quintal" value={newListing.price} onChange={e => setNewListing({...newListing, price: e.target.value})} />
+                        <div className="flex gap-1.5">
+                          <div className="relative flex-1">
+                            <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 text-xs text-muted-foreground font-semibold pointer-events-none">₹</span>
+                            <input
+                              required
+                              type="text"
+                              inputMode="numeric"
+                              className="w-full pl-6 pr-3 py-2 border border-border rounded-xl text-xs bg-white font-mono font-semibold"
+                              placeholder="5000"
+                              value={newListing.price}
+                              onChange={e => setNewListing({...newListing, price: e.target.value.replace(/[^0-9,.]/g, "")})}
+                            />
+                          </div>
+                          <select
+                            value={priceUnit}
+                            onChange={e => setPriceUnit(e.target.value)}
+                            className="px-2 py-2 border border-border rounded-xl text-xs bg-white font-semibold text-foreground cursor-pointer focus:outline-none focus:ring-2"
+                            style={{ minWidth: "110px" }}
+                          >
+                            {PRICE_UNITS.map(u => (
+                              <option key={u} value={u}>/ {u}</option>
+                            ))}
+                          </select>
+                        </div>
+                        {newListing.price && (
+                          <p className="text-[10px] text-primary font-semibold mt-1 ml-1">
+                            Preview: ₹{newListing.price} / {priceUnit}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Quality Certificate</label>
-                        <input required type="text" className="w-full px-3 py-2 border border-border rounded-xl text-xs bg-white" placeholder="e.g. Organic Certified" value={newListing.cert} onChange={e => setNewListing({...newListing, cert: e.target.value})} />
+                        <select
+                          required
+                          value={certType}
+                          onChange={e => setCertType(e.target.value)}
+                          className="w-full px-3 py-2 border border-border rounded-xl text-xs bg-white font-semibold text-foreground cursor-pointer focus:outline-none focus:ring-2"
+                        >
+                          <option value="" disabled>Select certificate type…</option>
+                          {CERT_OPTIONS.map(c => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
                       </div>
                       <div>
                         <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Pickup Location</label>
@@ -787,6 +860,99 @@ function BuyerDashboard() {
         )}
 
       </main>
+
+      {/* ── ESCROW CONFIRMATION MODAL ── */}
+      {confirmModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(6px)" }}
+          onClick={() => setConfirmModal(null)}
+        >
+          <div
+            className="relative bg-white rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden animate-slide-up"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Top accent bar */}
+            <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, oklch(0.75 0.18 80), oklch(0.65 0.20 50))" }} />
+
+            {/* Close button */}
+            <button
+              onClick={() => setConfirmModal(null)}
+              className="absolute top-4 right-4 size-7 flex items-center justify-center rounded-full bg-secondary hover:bg-border transition cursor-pointer"
+            >
+              <X className="size-3.5 text-muted-foreground" />
+            </button>
+
+            <div className="p-6 flex flex-col gap-5">
+              {/* Header */}
+              <div className="flex items-start gap-3">
+                <div className="size-10 shrink-0 rounded-2xl bg-amber-50 flex items-center justify-center">
+                  <AlertTriangle className="size-5 text-amber-500" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-foreground leading-tight">
+                    Confirm Escrow Funding
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
+                    Are you sure you want to lock funds for this procurement?
+                  </p>
+                </div>
+              </div>
+
+              {/* Listing Details Card */}
+              <div className="rounded-2xl border border-border bg-secondary/40 p-4 space-y-2.5 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-semibold">Listing ID</span>
+                  <span className="font-mono font-bold text-foreground">{confirmModal.id}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-semibold">Crop / Produce</span>
+                  <span className="font-bold text-foreground">{confirmModal.crop}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-semibold">Cooperative (FPO)</span>
+                  <span className="font-semibold text-foreground">{confirmModal.fpo}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-semibold">Quantity</span>
+                  <span className="font-bold text-foreground">{confirmModal.qty}</span>
+                </div>
+                <div className="flex justify-between items-center border-t border-border pt-2.5">
+                  <span className="text-muted-foreground font-semibold">Expected Price</span>
+                  <span className="font-extrabold text-primary text-sm">{confirmModal.price}</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-muted-foreground font-semibold">Quality Cert</span>
+                  <span className="text-right font-semibold text-green-700 max-w-[55%]">{confirmModal.cert}</span>
+                </div>
+              </div>
+
+              {/* Warning note */}
+              <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+                <ShieldCheck className="size-3.5 mt-0.5 shrink-0 text-amber-600" />
+                <span>Funds will be locked in the AgriSphere Escrow Vault and released only upon verified delivery confirmation.</span>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2.5">
+                <button
+                  onClick={() => setConfirmModal(null)}
+                  className="flex-1 h-10 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:bg-secondary transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmBuy}
+                  className="flex-1 h-10 rounded-xl text-xs font-bold text-white transition shadow-sm cursor-pointer hover:opacity-90 active:scale-95"
+                  style={{ background: "linear-gradient(90deg, oklch(0.72 0.18 80), oklch(0.62 0.20 50))" }}
+                >
+                  ✓ Yes, Fund Escrow
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
