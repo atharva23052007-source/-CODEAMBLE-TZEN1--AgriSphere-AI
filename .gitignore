@@ -32,4 +32,6 @@ dist-ssr
 *.sw?
 .engi
 .env
+.env.local
+.env.*.local
 .data/

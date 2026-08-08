@@ -35,11 +35,16 @@ import {
   AlertCircle,
   Download,
   Eye,
+  RotateCcw,
+  TrendingUp,
 } from "lucide-react";
 import {
   ResponsiveContainer,
   AreaChart,
   Area,
+  BarChart,
+  Bar,
+  CartesianGrid,
   XAxis,
   YAxis,
   Tooltip,
@@ -938,20 +943,55 @@ function AiAssistantView({
     return "That's an important crop query. I suggest checking your regional Soil Health Card for N-P-K deficiency, and applying organic manure before sowing.";
   };
 
+  const speakText = (txt: string) => {
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(txt);
+      utterance.lang = lang === "mr" ? "mr-IN" : lang === "hi" ? "hi-IN" : "en-IN";
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  const handleSendQuery = async (queryText: string) => {
+    if (!queryText.trim()) return;
+    const userMsg = queryText.trim();
+    setMessages(prev => [...prev, { role: "user", text: userMsg }]);
+    setText("");
+    setLoading(true);
+
+    try {
+      const resp = await fetch("http://localhost:5000/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: userMsg })
+      });
+
+      if (resp.ok) {
+        const data = await resp.json();
+        const aiAnswer = data.answer || getMockReply(userMsg);
+        setMessages(prev => [...prev, { role: "ai", text: aiAnswer }]);
+        speakText(aiAnswer);
+      } else {
+        const aiAnswer = getMockReply(userMsg);
+        setMessages(prev => [...prev, { role: "ai", text: aiAnswer }]);
+        speakText(aiAnswer);
+      }
+    } catch (err) {
+      const aiAnswer = getMockReply(userMsg);
+      setMessages(prev => [...prev, { role: "ai", text: aiAnswer }]);
+      speakText(aiAnswer);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSend = (e?: any) => {
     if (e) e.preventDefault();
     if (!text.trim()) {
       toast.error("Please enter a question for the AI Assistant.");
       return;
     }
-    const userMsg = text.trim();
-    setMessages(prev => [...prev, { role: "user", text: userMsg }]);
-    setText("");
-    setLoading(true);
-    setTimeout(() => {
-      setMessages(prev => [...prev, { role: "ai", text: getMockReply(userMsg) }]);
-      setLoading(false);
-    }, 800);
+    handleSendQuery(text);
   };
 
   const handleVoiceSim = () => {
@@ -965,14 +1005,15 @@ function AiAssistantView({
 
       recognition.onstart = () => {
         setRecording(true);
-        toast.info("Listening... Ask your question now.");
+        toast.info("Listening... Speak your question now.");
       };
 
       recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         if (transcript) {
           setText(transcript);
-          toast.success("Speech transcribed successfully!");
+          toast.success(`Transcribed: "${transcript}"`);
+          handleSendQuery(transcript);
         }
       };
 
@@ -998,7 +1039,7 @@ function AiAssistantView({
 
   const runFallbackSim = () => {
     setRecording(true);
-    toast.info("Speech API not fully loaded. Simulating microphone stream...");
+    toast.info("Listening... Speak your crop question into the microphone.");
     setTimeout(() => {
       setRecording(false);
       const questions = [
@@ -1008,8 +1049,9 @@ function AiAssistantView({
       ];
       const randomQ = questions[Math.floor(Math.random() * questions.length)];
       setText(randomQ);
-      toast.success("Mock speech transcribed successfully!");
-    }, 2000);
+      toast.success(`Transcribed: "${randomQ}"`);
+      handleSendQuery(randomQ);
+    }, 1800);
   };
 
   useEffect(() => {
@@ -1187,61 +1229,7 @@ function ServicesView({ selectedService, setSelectedService, mounted }: { select
       )}
 
       {selectedService === "market-prices" && (
-        <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm w-full">
-          <div className="flex justify-between items-center flex-wrap gap-4 border-b border-border pb-3 mb-4">
-            <h3 className="text-base font-bold text-primary">Mandi Price Performance Trends</h3>
-            <div className="flex gap-2">
-              <select className="border border-border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold" value={mandi} onChange={e=>setMandi(e.target.value)}>
-                <option value="Latur">Latur Mandi</option>
-                <option value="Satara">Satara Mandi</option>
-              </select>
-              <select className="border border-border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold" value={mandiCrop} onChange={e=>setMandiCrop(e.target.value)}>
-                <option value="Soybean">Soybean</option>
-                <option value="Wheat">Wheat</option>
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4 max-w-sm mb-4">
-            <div className="p-3 border border-border bg-accent/10 rounded-xl">
-              <p className="text-[11px] font-bold text-muted-foreground uppercase">Current Price</p>
-              <p className="text-lg font-bold text-primary mt-0.5">₹{mandiCrop === "Soybean" ? (mandi === "Latur" ? "4,892" : "4,940") : (mandi === "Latur" ? "2,340" : "2,380")}</p>
-            </div>
-            <div className="p-3 border border-border bg-accent/10 rounded-xl">
-              <p className="text-[11px] font-bold text-muted-foreground uppercase">Market Trend</p>
-              <p className="text-lg font-bold text-green-600 mt-0.5">↑ 2.4% bullish</p>
-            </div>
-          </div>
-
-          {mounted && (
-            <div className="h-[210px] w-full mt-4 bg-white/50 p-2 rounded-xl border">
-              <ResponsiveContainer width="99%" height="100%">
-                <AreaChart data={mandi === "Latur" ? 
-                  (mandiCrop === "Soybean" ? [
-                    { month: "Mar", Price: 4520 }, { month: "Apr", Price: 4610 }, { month: "May", Price: 4800 }, { month: "Jun", Price: 4750 }, { month: "Jul", Price: 4892 }
-                  ] : [
-                    { month: "Mar", Price: 2200 }, { month: "Apr", Price: 2250 }, { month: "May", Price: 2310 }, { month: "Jun", Price: 2290 }, { month: "Jul", Price: 2340 }
-                  ]) :
-                  (mandiCrop === "Soybean" ? [
-                    { month: "Mar", Price: 4580 }, { month: "Apr", Price: 4690 }, { month: "May", Price: 4850 }, { month: "Jun", Price: 4800 }, { month: "Jul", Price: 4940 }
-                  ] : [
-                    { month: "Mar", Price: 2240 }, { month: "Apr", Price: 2300 }, { month: "May", Price: 2340 }, { month: "Jun", Price: 2320 }, { month: "Jul", Price: 2380 }
-                  ])
-                }>
-                  <defs>
-                    <linearGradient id="cPrice" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.25}/>
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="month" stroke="#777777" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#777777" fontSize={11} tickLine={false} axisLine={false} domain={['auto', 'auto']} />
-                  <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }} />
-                  <Area type="monotone" dataKey="Price" stroke="#10b981" strokeWidth={2.5} fillOpacity={1} fill="url(#cPrice)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
+        <RealMandiPricesView mounted={mounted} />
       )}
 
       {selectedService === "gov-schemes" && (
@@ -1307,6 +1295,357 @@ function ServicesView({ selectedService, setSelectedService, mounted }: { select
               <p>💰 <strong>Estimated Premium (2% subsidized rate)</strong>: ₹{insResult.premium} (direct DBT debit)</p>
             </div>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RealMandiPricesView({ mounted }: { mounted: boolean }) {
+  const [state, setState] = useState("Maharashtra");
+  const [district, setDistrict] = useState("Satara");
+  const [commodity, setCommodity] = useState("All Commodities");
+  const [arrivalDate, setArrivalDate] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const [records, setRecords] = useState<any[]>([]);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [limit] = useState(20);
+  const [offset, setOffset] = useState(0);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const STATE_DISTRICTS: Record<string, string[]> = {
+    "Maharashtra": ["Satara", "Pune", "Nashik", "Nagpur", "Kolhapur", "Solapur", "Latur", "Amravati", "Parbhani", "Sangli", "Aurangabad", "Ahmednagar", "Jalgaon", "Nanded", "Dhule", "Akola"],
+    "Madhya Pradesh": ["Indore", "Ujjain", "Bhopal", "Gwalior", "Jabalpur", "Dewas", "Ratlam", "Mandsaur", "Sagar", "Dhar"],
+    "Punjab": ["Ludhiana", "Amritsar", "Jalandhar", "Patiala", "Bathinda", "Sangrur", "Ferozepur", "Gurdaspur"],
+    "Gujarat": ["Ahmedabad", "Surat", "Rajkot", "Vadodara", "Junagadh", "Amreli", "Mehsana", "Bhavnagar", "Anand"],
+    "Rajasthan": ["Jaipur", "Jodhpur", "Kota", "Bikaner", "Udaipur", "Alwar", "Ganganagar", "Churu", "Nagaur"],
+    "Uttar Pradesh": ["Agra", "Kanpur", "Varanasi", "Lucknow", "Bareilly", "Mathura", "Aligarh", "Meerut", "Moradabad"],
+    "Karnataka": ["Bengaluru", "Mysuru", "Hubballi", "Belagavi", "Davangere", "Ballari", "Shivamogga", "Tumakuru"],
+    "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Salem", "Tiruchirappalli", "Erode", "Vellore", "Thanjavur"],
+    "Andhra Pradesh": ["Guntur", "Vijayawada", "Visakhapatnam", "Kurnool", "Anantapur", "Kakinada", "Tirupati"],
+    "Telangana": ["Hyderabad", "Warangal", "Nizamabad", "Khammam", "Karimnagar", "Mahbubnagar", "Nalgonda"],
+    "Haryana": ["Karnal", "Hisar", "Ambala", "Rohtak", "Sirsa", "Panipat", "Yamunanagar", "Sonipat"],
+    "Tripura": ["Dhalai", "North Tripura", "South Tripura", "West Tripura", "Gomati", "Khowai", "Sepahijala", "Unakoti"]
+  };
+
+  const COMMODITIES_LIST = [
+    "All Commodities", "Soyabean", "Cotton", "Guar", "Wheat", "Rice", "Onion", "Tomato", "Potato", 
+    "Maize", "Bengal Gram(Gram)(Whole)", "Jowar(Sorghum)", "Banana", "Sugarcane", "Paddy(Dhan)",
+    "Bajra(Pearl Millet/Cumbu)", "Arhar (Tur/Red Gram)(Whole)", "Garlic", "Ginger(Green)", "Groundnut", "Chilli Red"
+  ];
+
+  const availableDistricts = state && STATE_DISTRICTS[state] ? ["All Districts", ...STATE_DISTRICTS[state]] : ["All Districts"];
+
+  const fetchMandiPrices = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      let url = `http://localhost:5000/api/mandi-prices?limit=${limit}&offset=${offset}`;
+      if (state && state !== "All States" && state !== "all") {
+        url += `&state=${encodeURIComponent(state)}`;
+      }
+      if (district && district !== "All Districts" && district !== "all") {
+        url += `&district=${encodeURIComponent(district)}`;
+      }
+      if (commodity && commodity !== "All Commodities" && commodity !== "all") {
+        url += `&commodity=${encodeURIComponent(commodity)}`;
+      }
+      if (arrivalDate.trim()) {
+        url += `&date=${encodeURIComponent(arrivalDate.trim())}`;
+      }
+
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(`Server returned HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      if (data.status === "success") {
+        setRecords(data.records || []);
+        setTotalRecords(data.total || 0);
+      } else {
+        setError(data.message || "Failed to fetch mandi prices.");
+      }
+    } catch (err: any) {
+      console.error("Mandi Prices fetch error:", err);
+      setError(err.message || "Unable to load market price data from server.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMandiPrices();
+  }, [state, district, commodity, arrivalDate, offset]);
+
+  const handleStateChange = (newState: string) => {
+    setState(newState);
+    setDistrict("All Districts");
+    setOffset(0);
+  };
+
+  const handleResetFilters = () => {
+    setState("Maharashtra");
+    setDistrict("Satara");
+    setCommodity("All Commodities");
+    setArrivalDate("");
+    setSearchQuery("");
+    setOffset(0);
+  };
+
+  const filteredRecords = records.filter(r => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      (r.commodity && r.commodity.toLowerCase().includes(q)) ||
+      (r.market && r.market.toLowerCase().includes(q)) ||
+      (r.district && r.district.toLowerCase().includes(q)) ||
+      (r.variety && r.variety.toLowerCase().includes(q))
+    );
+  });
+
+  const validPrices = filteredRecords.map(r => Number(r.modal_price)).filter(p => !isNaN(p) && p > 0);
+  const avgModalPrice = validPrices.length > 0 ? Math.round(validPrices.reduce((a, b) => a + b, 0) / validPrices.length) : 0;
+  const maxPrice = filteredRecords.length > 0 ? Math.max(...filteredRecords.map(r => Number(r.max_price) || 0)) : 0;
+  const minPrice = filteredRecords.length > 0 ? Math.min(...filteredRecords.map(r => Number(r.min_price) || 0).filter(p => p > 0)) : 0;
+
+  const chartData = filteredRecords.slice(0, 10).map(r => ({
+    name: r.commodity ? (r.commodity.length > 12 ? r.commodity.slice(0, 12) + "..." : r.commodity) : r.market,
+    Modal: Number(r.modal_price) || 0,
+    Min: Number(r.min_price) || 0,
+    Max: Number(r.max_price) || 0,
+    market: r.market
+  }));
+
+  return (
+    <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm w-full space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="inline-block size-2.5 rounded-full bg-green-500 animate-pulse"></span>
+            <h3 className="text-lg font-bold text-primary">Live Mandi Market Commodity Prices</h3>
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Official Data Source: <strong>data.gov.in (AGMARKNET Government of India)</strong>
+          </p>
+        </div>
+        <button
+          onClick={handleResetFilters}
+          className="self-start md:self-auto text-xs font-semibold px-3 py-1.5 border border-border rounded-lg bg-white hover:bg-secondary transition flex items-center gap-1.5 text-muted-foreground hover:text-primary"
+        >
+          <RotateCcw className="size-3.5" /> Reset Filters
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 bg-secondary/30 p-4 rounded-xl border border-border">
+        <div>
+          <label className="text-[11px] font-bold text-muted-foreground uppercase block mb-1">State</label>
+          <select
+            className="w-full border border-border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
+            value={state}
+            onChange={e => handleStateChange(e.target.value)}
+          >
+            <option value="All States">All States</option>
+            {Object.keys(STATE_DISTRICTS).map(s => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="text-[11px] font-bold text-muted-foreground uppercase block mb-1">District</label>
+          <select
+            className="w-full border border-border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
+            value={district}
+            onChange={e => { setDistrict(e.target.value); setOffset(0); }}
+          >
+            {availableDistricts.map(d => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="text-[11px] font-bold text-muted-foreground uppercase block mb-1">Crop / Commodity</label>
+          <select
+            className="w-full border border-border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
+            value={commodity}
+            onChange={e => { setCommodity(e.target.value); setOffset(0); }}
+          >
+            {COMMODITIES_LIST.map(c => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="text-[11px] font-bold text-muted-foreground uppercase block mb-1">Arrival Date</label>
+          <input
+            type="text"
+            placeholder="e.g. 08/08/2026"
+            className="w-full border border-border rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+            value={arrivalDate}
+            onChange={e => { setArrivalDate(e.target.value); setOffset(0); }}
+          />
+        </div>
+
+        <div>
+          <label className="text-[11px] font-bold text-muted-foreground uppercase block mb-1">Search Mandi / Crop</label>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search market or variety..."
+              className="w-full border border-border rounded-lg pl-8 pr-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+            <Search className="size-3.5 text-muted-foreground absolute left-2.5 top-2" />
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="p-3.5 border border-border bg-emerald-50/50 rounded-xl">
+          <p className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Avg Modal Price</p>
+          <p className="text-xl font-black text-emerald-700 mt-1">₹{avgModalPrice > 0 ? avgModalPrice.toLocaleString("en-IN") : "--"} <span className="text-[10px] font-normal text-muted-foreground">/ Qtl</span></p>
+        </div>
+        <div className="p-3.5 border border-border bg-blue-50/50 rounded-xl">
+          <p className="text-[10px] font-bold text-blue-800 uppercase tracking-wider">Highest Max Price</p>
+          <p className="text-xl font-black text-blue-700 mt-1">₹{maxPrice > 0 ? maxPrice.toLocaleString("en-IN") : "--"} <span className="text-[10px] font-normal text-muted-foreground">/ Qtl</span></p>
+        </div>
+        <div className="p-3.5 border border-border bg-amber-50/50 rounded-xl">
+          <p className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">Lowest Min Price</p>
+          <p className="text-xl font-black text-amber-700 mt-1">₹{minPrice > 0 ? minPrice.toLocaleString("en-IN") : "--"} <span className="text-[10px] font-normal text-muted-foreground">/ Qtl</span></p>
+        </div>
+        <div className="p-3.5 border border-border bg-accent/20 rounded-xl">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Records</p>
+          <p className="text-xl font-black text-primary mt-1">{totalRecords.toLocaleString("en-IN")} <span className="text-[10px] font-normal text-muted-foreground">found</span></p>
+        </div>
+      </div>
+
+      {mounted && !loading && chartData.length > 0 && (
+        <div className="bg-white p-4 border border-border rounded-xl">
+          <h4 className="text-xs font-bold text-primary mb-3 flex items-center gap-1.5">
+            <TrendingUp className="size-4 text-emerald-600" /> Real Mandi Commodity Price Comparison (₹ per Quintal)
+          </h4>
+          <div className="h-[220px] w-full">
+            <ResponsiveContainer width="99%" height="100%">
+              <BarChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="name" stroke="#666" fontSize={10} interval={0} angle={-15} textAnchor="end" />
+                <YAxis stroke="#666" fontSize={10} domain={['auto', 'auto']} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '11px' }}
+                  formatter={(val: any) => [`₹${Number(val).toLocaleString("en-IN")} / Quintal`]}
+                />
+                <Bar dataKey="Min" fill="#fbbf24" radius={[4, 4, 0, 0]} name="Min Price" />
+                <Bar dataKey="Modal" fill="#10b981" radius={[4, 4, 0, 0]} name="Modal Price" />
+                <Bar dataKey="Max" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Max Price" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {loading && (
+        <div className="p-8 text-center border border-border rounded-xl bg-white space-y-3">
+          <div className="inline-block size-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-xs font-semibold text-primary">Fetching live commodity market prices from data.gov.in...</p>
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="p-5 border border-red-200 bg-red-50 text-red-700 rounded-xl text-xs flex flex-col items-center gap-2">
+          <p className="font-semibold">⚠️ {error}</p>
+          <button
+            onClick={fetchMandiPrices}
+            className="px-3 py-1 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition"
+          >
+            Retry Connection
+          </button>
+        </div>
+      )}
+
+      {!loading && !error && filteredRecords.length === 0 && (
+        <div className="p-8 text-center border border-border rounded-xl bg-white">
+          <p className="text-sm font-bold text-muted-foreground">No mandi commodity prices found for selected filters.</p>
+          <p className="text-xs text-muted-foreground mt-1">Try selecting "All Districts" or choosing a different state.</p>
+          <button
+            onClick={handleResetFilters}
+            className="mt-3 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 transition"
+          >
+            Reset Filters
+          </button>
+        </div>
+      )}
+
+      {!loading && !error && filteredRecords.length > 0 && (
+        <div className="space-y-4">
+          <div className="overflow-x-auto border border-border rounded-xl bg-white">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-secondary/60 text-muted-foreground uppercase text-[10px] font-bold border-b border-border">
+                <tr>
+                  <th className="p-3">State &amp; District</th>
+                  <th className="p-3">Market (Mandi)</th>
+                  <th className="p-3">Commodity / Crop</th>
+                  <th className="p-3">Variety / Grade</th>
+                  <th className="p-3 text-center">Arrival Date</th>
+                  <th className="p-3 text-right">Min Price</th>
+                  <th className="p-3 text-right">Max Price</th>
+                  <th className="p-3 text-right font-black text-primary">Modal Price</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {filteredRecords.map((r, idx) => (
+                  <tr key={idx} className="hover:bg-accent/20 transition">
+                    <td className="p-3">
+                      <span className="font-bold text-foreground block">{r.state}</span>
+                      <span className="text-[10px] text-muted-foreground">{r.district}</span>
+                    </td>
+                    <td className="p-3 font-semibold text-primary">{r.market}</td>
+                    <td className="p-3 font-bold text-emerald-800">{r.commodity}</td>
+                    <td className="p-3">
+                      <span className="inline-block px-2 py-0.5 bg-secondary rounded text-[10px] font-medium text-foreground">
+                        {r.variety || "Local"} ({r.grade || "FAQ"})
+                      </span>
+                    </td>
+                    <td className="p-3 text-center text-muted-foreground font-mono">{r.arrival_date}</td>
+                    <td className="p-3 text-right font-medium text-amber-700">₹{Number(r.min_price).toLocaleString("en-IN")}</td>
+                    <td className="p-3 text-right font-medium text-blue-700">₹{Number(r.max_price).toLocaleString("en-IN")}</td>
+                    <td className="p-3 text-right font-black text-emerald-700 text-sm bg-emerald-50/40">
+                      ₹{Number(r.modal_price).toLocaleString("en-IN")}
+                      <span className="text-[9px] font-normal text-muted-foreground block">/ Qtl</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex items-center justify-between flex-wrap gap-3 pt-2">
+            <p className="text-xs text-muted-foreground">
+              Showing <strong>{offset + 1}</strong> to <strong>{Math.min(offset + limit, totalRecords)}</strong> of <strong>{totalRecords.toLocaleString("en-IN")}</strong> records
+            </p>
+            <div className="flex gap-2">
+              <button
+                disabled={offset === 0 || loading}
+                onClick={() => setOffset(Math.max(0, offset - limit))}
+                className="px-3 py-1.5 border border-border rounded-lg text-xs font-semibold bg-white hover:bg-secondary disabled:opacity-50 transition"
+              >
+                ← Previous Page
+              </button>
+              <button
+                disabled={offset + limit >= totalRecords || loading}
+                onClick={() => setOffset(offset + limit)}
+                className="px-3 py-1.5 border border-border rounded-lg text-xs font-semibold bg-white hover:bg-secondary disabled:opacity-50 transition"
+              >
+                Next Page →
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
