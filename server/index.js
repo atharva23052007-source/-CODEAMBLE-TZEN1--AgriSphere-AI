@@ -4,6 +4,7 @@ import multer from "multer";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
 import { HfInference } from "@huggingface/inference";
 import { getCache, setCache, isRedisConnected } from "./redis.js";
 
@@ -988,6 +989,174 @@ app.delete("/api/farms/:id", (req, res) => {
   } catch (err) {
     return res.status(500).json({ status: "error", message: err.message });
   }
+});
+
+/**
+ * User Authentication REST APIs & Secure Password Hashing
+ */
+
+function hashPasswordServer(password) {
+  if (!password) return "";
+  const salt = "agrisphere_salt_2026";
+  return crypto.pbkdf2Sync(password, salt, 10000, 64, "sha512").toString("hex");
+}
+
+function verifyPasswordServer(password, storedHash) {
+  if (!password || !storedHash) return false;
+  if (password === storedHash) return true;
+  const hash = hashPasswordServer(password);
+  return hash === storedHash;
+}
+
+const USERS_DATA_DIR = path.join(process.cwd(), ".data");
+const USERS_FILE_PATH = path.join(USERS_DATA_DIR, "users_db.json");
+
+const INITIAL_USERS_STORE = [
+  {
+    id: "usr_admin_01",
+    email: "atharva23052007@gmail.com",
+    passwordHash: hashPasswordServer("Atharva@2007"),
+    role: "super_admin",
+    name: "Platform Owner"
+  },
+  {
+    id: "usr_farmer_01",
+    email: "farmer@agrisphere.com",
+    passwordHash: hashPasswordServer("Farmer@123"),
+    role: "farmer",
+    name: "Rajesh Patil"
+  },
+  {
+    id: "usr_trader_01",
+    email: "buyer@agrisphere.com",
+    passwordHash: hashPasswordServer("Buyer@123"),
+    role: "trader",
+    name: "Satara Wholesalers Co."
+  },
+  {
+    id: "usr_operator_01",
+    email: "operator@agrisphere.com",
+    passwordHash: hashPasswordServer("Operator@123"),
+    role: "operator",
+    name: "Sahyadri FPO Operator"
+  },
+  {
+    id: "usr_officer_01",
+    email: "officer@agrisphere.com",
+    passwordHash: hashPasswordServer("Officer@123"),
+    role: "officer",
+    name: "Satara Agri Officer"
+  }
+];
+
+function loadUsersFromStore() {
+  try {
+    if (!fs.existsSync(USERS_DATA_DIR)) {
+      fs.mkdirSync(USERS_DATA_DIR, { recursive: true });
+    }
+    if (!fs.existsSync(USERS_FILE_PATH)) {
+      fs.writeFileSync(USERS_FILE_PATH, JSON.stringify(INITIAL_USERS_STORE, null, 2), "utf8");
+      return INITIAL_USERS_STORE;
+    }
+    const raw = fs.readFileSync(USERS_FILE_PATH, "utf8");
+    return JSON.parse(raw);
+  } catch (err) {
+    console.warn("Failed to read users store, using initial seed:", err.message);
+    return INITIAL_USERS_STORE;
+  }
+}
+
+function saveUsersToStore(users) {
+  try {
+    if (!fs.existsSync(USERS_DATA_DIR)) {
+      fs.mkdirSync(USERS_DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(USERS_FILE_PATH, JSON.stringify(users, null, 2), "utf8");
+  } catch (err) {
+    console.warn("Failed to write users store:", err.message);
+  }
+}
+
+app.post("/api/auth/register", (req, res) => {
+  try {
+    const { name, email, password, role } = req.body || {};
+    const cleanEmail = (email || "").toLowerCase().trim();
+
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      return res.status(400).json({ status: "error", message: "Please enter a valid email address." });
+    }
+    if (!password || password.length < 6) {
+      return res.status(400).json({ status: "error", message: "Password must be at least 6 characters." });
+    }
+    if (!name || !name.trim()) {
+      return res.status(400).json({ status: "error", message: "Please enter your name." });
+    }
+
+    const users = loadUsersFromStore();
+    if (users.some(u => u.email === cleanEmail)) {
+      return res.status(400).json({ status: "error", message: "An account with this email address already exists. Please log in." });
+    }
+
+    const userRole = role || "farmer";
+    const newUser = {
+      id: `usr_${userRole}_${Date.now()}`,
+      email: cleanEmail,
+      passwordHash: hashPasswordServer(password),
+      role: userRole,
+      name: name.trim(),
+      createdAt: new Date().toISOString()
+    };
+
+    users.push(newUser);
+    saveUsersToStore(users);
+
+    const token = `AGRISPHERE_SESSION_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const { passwordHash, ...userClean } = newUser;
+
+    return res.json({ status: "success", message: "Registration successful!", token, user: userClean });
+  } catch (err) {
+    return res.status(500).json({ status: "error", message: err.message });
+  }
+});
+
+app.post("/api/auth/login", (req, res) => {
+  try {
+    const { email, password, role } = req.body || {};
+    const cleanEmail = (email || "").toLowerCase().trim();
+
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      return res.status(400).json({ status: "error", message: "Please enter a valid email address." });
+    }
+    if (!password) {
+      return res.status(400).json({ status: "error", message: "Please enter your password." });
+    }
+
+    const users = loadUsersFromStore();
+    const foundUser = users.find(u => u.email === cleanEmail);
+
+    if (!foundUser) {
+      return res.status(401).json({ status: "error", message: "Invalid email or password. Account not found." });
+    }
+
+    if (!verifyPasswordServer(password, foundUser.passwordHash)) {
+      return res.status(401).json({ status: "error", message: "Invalid password. Please check your password and try again." });
+    }
+
+    if (role && foundUser.role !== role && foundUser.role !== "super_admin") {
+      return res.status(403).json({ status: "error", message: `Account registered under role "${foundUser.role}". Please switch to the ${foundUser.role} login page.` });
+    }
+
+    const token = `AGRISPHERE_SESSION_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const { passwordHash, ...userClean } = foundUser;
+
+    return res.json({ status: "success", message: "Login successful!", token, user: userClean });
+  } catch (err) {
+    return res.status(500).json({ status: "error", message: err.message });
+  }
+});
+
+app.post("/api/auth/logout", (req, res) => {
+  return res.json({ status: "success", message: "Logged out successfully." });
 });
 
 app.listen(PORT, () => {

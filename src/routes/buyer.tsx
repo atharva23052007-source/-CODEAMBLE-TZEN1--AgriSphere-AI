@@ -212,10 +212,13 @@ function BuyerDashboard() {
   };
 
   const handleLogout = () => {
-    toast.info("Logging out...");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("agrisphere_user");
+    }
+    toast.success("Logged out successfully.");
     setTimeout(() => {
-      navigate({ to: "/" });
-    }, 800);
+      navigate({ to: "/login/buyer" });
+    }, 500);
   };
 
   return (

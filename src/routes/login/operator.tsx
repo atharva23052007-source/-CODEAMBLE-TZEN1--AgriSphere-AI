@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { ArrowLeft, Mail, Lock, ShieldCheck, Landmark, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowLeft, Mail, Lock, ShieldCheck, Landmark, User, Loader2, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "../../components/ui/sonner";
 import logoImg from "@/assets/logo.png";
+import { storeLoginUser, storeRegisterUser } from "../../lib/mongodb";
 
 export const Route = createFileRoute("/login/operator")({
   component: OperatorLogin,
@@ -11,31 +12,108 @@ export const Route = createFileRoute("/login/operator")({
 
 function OperatorLogin() {
   const navigate = useNavigate();
+  const [isRegister, setIsRegister] = useState(false);
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberEmail, setRememberEmail] = useState(true);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedEmail = localStorage.getItem("remembered_email");
+      if (savedEmail) {
+        setEmail(savedEmail);
+      } else {
+        setEmail("operator@agrisphere.com");
+      }
+      setPassword("Operator@123");
+    }
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.includes("@")) {
+    const cleanEmail = email.toLowerCase().trim();
+
+    if (!cleanEmail || !cleanEmail.includes("@")) {
       toast.error("Please enter a valid email address.");
       return;
     }
-    if (password.length < 6) {
+    if (!password || password.length < 6) {
       toast.error("Password must be at least 6 characters.");
+      return;
+    }
+    if (isRegister && (!name || !name.trim())) {
+      toast.error("Please enter your full name or FPO name.");
       return;
     }
 
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      toast.success("Authentication Successful!", {
-        description: "Welcome FPO Admin Operator workspace.",
-      });
+
+    try {
+      let resData: { token: string; user: any };
+
+      if (isRegister) {
+        try {
+          const apiRes = await fetch("http://localhost:5000/api/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, email: cleanEmail, password, role: "operator" })
+          });
+          if (apiRes.ok) {
+            resData = await apiRes.json();
+          } else {
+            const errData = await apiRes.json();
+            throw new Error(errData.message || "Registration failed");
+          }
+        } catch (err) {
+          resData = await storeRegisterUser({ name, email: cleanEmail, password, role: "operator" });
+        }
+
+        toast.success("Operator Account Created!", {
+          description: `Welcome to FPO Administrator workspace, ${resData.user.name}!`,
+        });
+      } else {
+        try {
+          const apiRes = await fetch("http://localhost:5000/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: cleanEmail, password, role: "operator" })
+          });
+          if (apiRes.ok) {
+            resData = await apiRes.json();
+          } else {
+            const errData = await apiRes.json();
+            throw new Error(errData.message || "Invalid credentials");
+          }
+        } catch (err: any) {
+          resData = await storeLoginUser({ email: cleanEmail, password, role: "operator" });
+        }
+
+        toast.success("Operator Authentication Verified!", {
+          description: `Welcome back, ${resData.user.name}!`,
+        });
+      }
+
+      if (rememberEmail) {
+        localStorage.setItem("remembered_email", cleanEmail);
+      }
+
+      const sessionObj = {
+        token: resData.token,
+        user: resData.user,
+        loginTime: new Date().toISOString()
+      };
+      localStorage.setItem("agrisphere_user", JSON.stringify(sessionObj));
+
       setTimeout(() => {
         navigate({ to: "/operator" });
-      }, 1000);
-    }, 1500);
+      }, 900);
+    } catch (err: any) {
+      toast.error(err?.message || "Authentication failed. Check operator credentials.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -58,10 +136,10 @@ function OperatorLogin() {
           <img src={logoImg} alt="AgriSphere logo" className="size-full object-contain" />
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground tracking-tight">
-          Operator Portal
+          {isRegister ? "Operator Registration" : "Operator Portal"}
         </h2>
         <p className="mt-2 text-center text-xs text-muted-foreground">
-          NGO / FPO / Agency Administrator Access.
+          {isRegister ? "Register NGO / FPO Administrator workspace." : "NGO / FPO / Agency Administrator Access."}
         </p>
       </div>
 
@@ -88,22 +166,49 @@ function OperatorLogin() {
             <div>
               <p className="font-bold">Encrypted SSL Administrative Entry</p>
               <p className="text-muted-foreground mt-0.5">
-                Connecting to primary AgriSphere DBT registry. All operations are logged.
+                Default Demo Login: <strong className="text-primary font-semibold">operator@agrisphere.com</strong> / <strong className="text-primary font-semibold">Operator@123</strong>
               </p>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" method="POST" action="#">
+            {isRegister && (
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1.5" htmlFor="operator-name">
+                  Full Name / Agency Name *
+                </label>
+                <div className="relative">
+                  <input
+                    id="operator-name"
+                    type="text"
+                    required
+                    name="name"
+                    autoComplete="name"
+                    className="w-full pl-10 pr-4 border border-border rounded-xl h-11 text-sm bg-white font-medium focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                    placeholder="e.g. Sahyadri FPO Operator"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3">
+                    <User className="size-4 text-muted-foreground/60" />
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-2">
-                Operator Email Address
+              <label className="text-xs font-semibold text-muted-foreground block mb-1.5" htmlFor="operator-email">
+                Operator Email Address *
               </label>
               <div className="relative">
                 <input
+                  id="operator-email"
                   type="email"
                   required
+                  name="email"
+                  autoComplete="username"
                   className="w-full pl-10 pr-4 border border-border rounded-xl h-11 text-sm bg-white font-medium focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                  placeholder="name@fpo-agency.org"
+                  placeholder="operator@agrisphere.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -114,13 +219,16 @@ function OperatorLogin() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-2">
-                Security Password
+              <label className="text-xs font-semibold text-muted-foreground block mb-1.5" htmlFor="operator-password">
+                Password *
               </label>
               <div className="relative">
                 <input
+                  id="operator-password"
                   type="password"
                   required
+                  name="password"
+                  autoComplete={isRegister ? "new-password" : "current-password"}
                   className="w-full pl-10 pr-4 border border-border rounded-xl h-11 text-sm bg-white font-medium focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
                   placeholder="••••••••"
                   value={password}
@@ -132,28 +240,44 @@ function OperatorLogin() {
               </div>
             </div>
 
+            <div className="flex items-center justify-between text-xs">
+              <label className="flex items-center gap-2 cursor-pointer text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={rememberEmail}
+                  onChange={(e) => setRememberEmail(e.target.checked)}
+                  className="rounded border-border text-primary focus:ring-primary"
+                />
+                Remember my email
+              </label>
+
+              <button
+                type="button"
+                onClick={() => setIsRegister(!isRegister)}
+                className="font-bold text-primary hover:underline cursor-pointer"
+              >
+                {isRegister ? "Registered? Sign In" : "Register Operator"}
+              </button>
+            </div>
+
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-11 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/95 transition text-sm flex items-center justify-center gap-2 shadow-sm"
+              className="w-full h-11 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/95 transition text-sm flex items-center justify-center gap-2 shadow-sm cursor-pointer"
             >
               {loading ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />
-                  Verifying operator permissions...
+                  {isRegister ? "Creating Operator..." : "Authenticating..."}
                 </>
               ) : (
-                "Log In to Workspace"
+                <>
+                  <KeyRound className="size-4" />
+                  {isRegister ? "Create Operator Account" : "Log In to Workspace"}
+                </>
               )}
             </button>
           </form>
-
-          {/* Setup / Help note */}
-          <div className="border-t border-border pt-4 text-center">
-            <span className="text-[10px] text-muted-foreground">
-              Issues logging in? Reach DBT operations helpline for secure credentials reset.
-            </span>
-          </div>
 
         </div>
       </div>

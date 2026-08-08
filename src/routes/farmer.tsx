@@ -18,6 +18,7 @@ import {
   Droplets,
   Wind,
   CloudRain,
+  LogOut,
   Headphones,
   Sparkles,
   Mic,
@@ -458,6 +459,18 @@ function Index() {
                   <MapPin className="size-4 text-primary" />
                   Satara, Maharashtra
                   <ChevronDown className="size-4 text-muted-foreground" />
+                </button>
+                <button
+                  onClick={() => {
+                    localStorage.removeItem("agrisphere_user");
+                    toast.success("Logged out successfully.");
+                    window.location.href = "/login/farmer";
+                  }}
+                  title="Logout"
+                  className="flex items-center gap-1.5 h-11 px-3.5 rounded-full border border-border bg-white hover:bg-rose-50 hover:text-rose-700 transition text-xs font-semibold shadow-sm cursor-pointer"
+                >
+                  <LogOut className="size-4" />
+                  Logout
                 </button>
               </div>
             </header>

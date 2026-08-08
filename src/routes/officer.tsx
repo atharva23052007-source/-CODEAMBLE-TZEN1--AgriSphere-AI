@@ -74,10 +74,13 @@ function OfficerDashboard() {
   };
 
   const handleLogout = () => {
-    toast.info("Logging out from Govt Officer workspace...");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("agrisphere_user");
+    }
+    toast.success("Logged out successfully.");
     setTimeout(() => {
-      navigate({ to: "/" });
-    }, 800);
+      navigate({ to: "/login/officer" });
+    }, 500);
   };
 
   const filteredAppraisals = appraisals.filter(a => 
