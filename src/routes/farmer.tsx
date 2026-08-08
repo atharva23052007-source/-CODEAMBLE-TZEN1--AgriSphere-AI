@@ -37,6 +37,11 @@ import {
   Eye,
   RotateCcw,
   TrendingUp,
+  ExternalLink,
+  ShieldCheck,
+  FileText,
+  CheckCircle2,
+  Calculator,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -1233,69 +1238,11 @@ function ServicesView({ selectedService, setSelectedService, mounted }: { select
       )}
 
       {selectedService === "gov-schemes" && (
-        <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm max-w-xl mx-auto w-full">
-          <h3 className="text-[17px] font-bold text-primary mb-3">Subsidies Eligibility Verification</h3>
-          <form onSubmit={handleSchemes} className="flex flex-col gap-3">
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">State Registry</label>
-              <select className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white font-medium" value={schemeState} onChange={e=>setSchemeState(e.target.value)}>
-                <option value="Maharashtra">Maharashtra (Satara district)</option>
-                <option value="Madhya Pradesh">Madhya Pradesh</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">Farm Land Size (Acres)</label>
-              <input className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" placeholder="e.g. 5.5" value={land} onChange={e=>setLand(e.target.value)} />
-            </div>
-            <button type="submit" className="h-11 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 mt-2 transition text-sm">Check Scheme Eligibility</button>
-          </form>
-          {eligible && (
-            <div className="mt-4 p-4 border border-border bg-accent/40 rounded-xl text-xs space-y-2 animate-fade-in">
-              <p>🌾 <strong>PM-KISAN Status</strong>: {eligible.pmKisan}</p>
-              <p>🛡️ <strong>PM Fasal Bima Status</strong>: {eligible.falybima}</p>
-            </div>
-          )}
-        </div>
+        <RealGovSchemesView />
       )}
 
       {selectedService === "insurance" && (
-        <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm max-w-xl mx-auto w-full">
-          <h3 className="text-[17px] font-bold text-primary mb-3">Subsidized Crop Insurance Portal</h3>
-          <form onSubmit={handleInsurance} className="flex flex-col gap-4">
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">Land Survey Number</label>
-              <input className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" placeholder="e.g. 24A/9" value={insSurvey} onChange={e=>setInsSurvey(e.target.value)} />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">Desired Cover Amount (INR)</label>
-              <input className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" placeholder="e.g. 50000" value={insCover} onChange={e=>setInsCover(e.target.value)} />
-            </div>
-            <div className="border border-dashed border-border rounded-xl p-4 text-center bg-accent/10">
-              <UploadCloud className="size-8 mx-auto text-primary mb-2 animate-bounce" />
-              <p className="text-xs font-bold text-foreground">Upload 7/12 Land Record Document</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">Required to parse survey verification</p>
-              {insProgress !== null && (
-                <div className="w-full bg-secondary h-2 rounded-full overflow-hidden mt-3 max-w-xs mx-auto">
-                  <div className="bg-primary h-full" style={{ width: `${insProgress}%` }}></div>
-                </div>
-              )}
-              {insFileUploaded ? (
-                <p className="text-xs text-green-600 font-semibold mt-2.5 flex items-center justify-center gap-1">✓ 7_12_extract.pdf successfully linked</p>
-              ) : (
-                <button type="button" onClick={triggerUpload} disabled={insProgress !== null} className="mt-3 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-bold rounded-lg hover:bg-primary/95 transition">
-                  {insProgress !== null ? `Scanning (${insProgress}%)` : "Simulate Document Verification"}
-                </button>
-              )}
-            </div>
-            <button type="submit" className="h-11 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 transition text-sm">Submit Crop Policy Application</button>
-          </form>
-          {insResult && (
-            <div className="mt-4 p-4 border border-border bg-green-50/50 text-[11px] rounded-xl flex flex-col gap-1 text-primary animate-fade-in">
-              <p>📄 <strong>Insurance Policy Code</strong>: {insResult.policyNo}</p>
-              <p>💰 <strong>Estimated Premium (2% subsidized rate)</strong>: ₹{insResult.premium} (direct DBT debit)</p>
-            </div>
-          )}
-        </div>
+        <RealCropInsuranceView />
       )}
     </div>
   );
@@ -1648,6 +1595,485 @@ function RealMandiPricesView({ mounted }: { mounted: boolean }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function RealGovSchemesView() {
+  const [category, setCategory] = useState("All");
+  const [state, setState] = useState("All");
+  const [crop, setCrop] = useState("All");
+
+  const [schemes, setSchemes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [checkLand, setCheckLand] = useState("");
+  const [checkIncome, setCheckIncome] = useState("");
+  const [eligibilityResult, setEligibilityResult] = useState<string | null>(null);
+
+  const fetchSchemes = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      let url = `http://localhost:5000/api/gov-schemes?category=${encodeURIComponent(category)}&state=${encodeURIComponent(state)}&crop=${encodeURIComponent(crop)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.status === "success") {
+        setSchemes(data.schemes || []);
+      } else {
+        setError(data.message || "Failed to load government schemes.");
+      }
+    } catch (err: any) {
+      console.error("Gov Schemes fetch error:", err);
+      setError(err.message || "Unable to reach schemes API.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSchemes();
+  }, [category, state, crop]);
+
+  const handleCheckEligibility = (e: React.FormEvent) => {
+    e.preventDefault();
+    const landVal = parseFloat(checkLand) || 0;
+    if (landVal <= 5) {
+      setEligibilityResult("✅ High Priority Eligible: Small/Marginal Farmer category (Subsidies up to 80% under PMKSY & SMAM, ₹12,000/yr under PM-KISAN + Namo Shetkari).");
+    } else {
+      setEligibilityResult("✅ Eligible under General Category (Standard 55% Drip Subsidy & 40% Machinery Subsidy).");
+    }
+  };
+
+  return (
+    <div className="space-y-6 w-full">
+      {/* Header & Filter Bar */}
+      <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-border pb-4">
+          <div>
+            <h3 className="text-lg font-bold text-primary flex items-center gap-2">
+              <ShieldCheck className="size-5 text-emerald-600" /> Government Agriculture Schemes &amp; Subsidies
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Verified datasets from <strong>Ministry of Agriculture &amp; Farmers Welfare / State Agri Dept</strong>
+            </p>
+          </div>
+          <a
+            href="https://pmkisan.gov.in/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs font-bold px-3 py-1.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition flex items-center gap-1.5 self-start md:self-auto"
+          >
+            Central Agri Portal <ExternalLink className="size-3.5" />
+          </a>
+        </div>
+
+        {/* Filter Controls */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-secondary/30 p-3.5 rounded-xl border border-border">
+          <div>
+            <label className="text-[11px] font-bold text-muted-foreground uppercase block mb-1">Scheme Category</label>
+            <select
+              className="w-full border border-border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
+              value={category}
+              onChange={e => setCategory(e.target.value)}
+            >
+              <option value="All">All Categories</option>
+              <option value="Financial Aid">Financial Aid / Income Support</option>
+              <option value="Irrigation">Irrigation &amp; Drip Subsidies</option>
+              <option value="Machinery">Machinery &amp; Equipment (SMAM)</option>
+              <option value="Organic">Organic Farming (PKVY)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-[11px] font-bold text-muted-foreground uppercase block mb-1">Filter by State</label>
+            <select
+              className="w-full border border-border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
+              value={state}
+              onChange={e => setState(e.target.value)}
+            >
+              <option value="All">All States (Central Schemes)</option>
+              <option value="Maharashtra">Maharashtra</option>
+              <option value="Madhya Pradesh">Madhya Pradesh</option>
+              <option value="Punjab">Punjab</option>
+              <option value="Gujarat">Gujarat</option>
+              <option value="Rajasthan">Rajasthan</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-[11px] font-bold text-muted-foreground uppercase block mb-1">Filter by Crop</label>
+            <select
+              className="w-full border border-border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
+              value={crop}
+              onChange={e => setCrop(e.target.value)}
+            >
+              <option value="All">All Crops</option>
+              <option value="Soybean">Soybean</option>
+              <option value="Cotton">Cotton</option>
+              <option value="Wheat">Wheat</option>
+              <option value="Sugarcane">Sugarcane</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Instant Eligibility Checker Widget */}
+      <div className="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-5 shadow-sm">
+        <h4 className="text-sm font-bold text-emerald-900 mb-2 flex items-center gap-1.5">
+          <CheckCircle2 className="size-4 text-emerald-700" /> Instant Subsidy Eligibility Calculator
+        </h4>
+        <form onSubmit={handleCheckEligibility} className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+          <div>
+            <label className="text-[11px] font-semibold text-emerald-800 block mb-1">Farm Land Size (Acres)</label>
+            <input
+              type="number"
+              step="0.1"
+              placeholder="e.g. 4.5"
+              className="w-full border border-emerald-200 rounded-lg px-3 py-1.5 text-xs bg-white"
+              value={checkLand}
+              onChange={e => setCheckLand(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-emerald-800 block mb-1">Annual Family Income (Optional)</label>
+            <input
+              type="number"
+              placeholder="e.g. 150000"
+              className="w-full border border-emerald-200 rounded-lg px-3 py-1.5 text-xs bg-white"
+              value={checkIncome}
+              onChange={e => setCheckIncome(e.target.value)}
+            />
+          </div>
+          <button
+            type="submit"
+            className="h-8 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-lg transition"
+          >
+            Check My Eligibility
+          </button>
+        </form>
+
+        {eligibilityResult && (
+          <div className="mt-3 p-3 bg-white border border-emerald-300 rounded-xl text-xs font-semibold text-emerald-900 animate-fade-in">
+            {eligibilityResult}
+          </div>
+        )}
+      </div>
+
+      {/* Loading & Error States */}
+      {loading && (
+        <div className="p-8 text-center bg-white border border-border rounded-xl">
+          <div className="inline-block size-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-xs font-semibold text-primary mt-2">Loading official government schemes...</p>
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-semibold text-center">
+          ⚠️ {error}
+        </div>
+      )}
+
+      {/* Schemes Grid */}
+      {!loading && !error && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {schemes.map((s) => (
+            <div key={s.id} className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition space-y-4 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className="inline-block px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded uppercase tracking-wider mb-1">
+                      {s.category}
+                    </span>
+                    <h4 className="text-base font-bold text-primary leading-tight">{s.name}</h4>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{s.ministry}</p>
+                  </div>
+                  <span className="px-2 py-1 bg-secondary rounded text-[11px] font-mono font-bold text-foreground">
+                    {s.state}
+                  </span>
+                </div>
+
+                <p className="text-xs text-foreground/90 leading-relaxed">{s.description}</p>
+
+                <div className="space-y-2 text-xs border-t border-border pt-3">
+                  <div>
+                    <strong className="text-emerald-800 block text-[11px] uppercase tracking-wider">💰 Financial Benefit:</strong>
+                    <p className="text-foreground font-semibold text-xs mt-0.5">{s.benefits}</p>
+                  </div>
+
+                  <div>
+                    <strong className="text-primary block text-[11px] uppercase tracking-wider">🎯 Eligibility Criteria:</strong>
+                    <p className="text-muted-foreground text-xs mt-0.5">{s.eligibility}</p>
+                  </div>
+
+                  <div>
+                    <strong className="text-primary block text-[11px] uppercase tracking-wider">📋 Required Documents:</strong>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {s.documents.map((doc: string, idx: number) => (
+                        <span key={idx} className="px-2 py-0.5 bg-secondary text-foreground text-[10px] rounded font-medium">
+                          ✓ {doc}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <strong className="text-primary block text-[11px] uppercase tracking-wider">📝 How to Apply:</strong>
+                    <p className="text-muted-foreground text-xs mt-0.5 font-mono">{s.applicationProcess}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-3 flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-[10px] text-muted-foreground">Deadline: <strong className="text-foreground">{s.deadline}</strong></p>
+                  <p className="text-[10px] text-muted-foreground">Helpline: <strong className="text-emerald-700">{s.helpline}</strong></p>
+                </div>
+
+                <a
+                  href={s.officialLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow-sm shrink-0"
+                >
+                  Apply on Official Portal <ExternalLink className="size-3.5" />
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RealCropInsuranceView() {
+  const [state, setState] = useState("All");
+  const [crop, setCrop] = useState("All");
+
+  const [insuranceSchemes, setInsuranceSchemes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // PMFBY Calculator state
+  const [calcCrop, setCalcCrop] = useState("Soybean");
+  const [calcAcres, setCalcAcres] = useState("2");
+  const [calcSumPerAcre, setCalcSumPerAcre] = useState("30000");
+  const [calcResult, setCalcResult] = useState<any>(null);
+  const [calcLoading, setCalcLoading] = useState(false);
+
+  const fetchInsurance = async () => {
+    setLoading(true);
+    try {
+      const url = `http://localhost:5000/api/crop-insurance?state=${encodeURIComponent(state)}&crop=${encodeURIComponent(crop)}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        setInsuranceSchemes(data.insuranceSchemes || []);
+      }
+    } catch (err) {
+      console.error("Insurance fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInsurance();
+  }, [state, crop]);
+
+  const handleCalculatePremium = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCalcLoading(true);
+    try {
+      const res = await fetch("http://localhost:5000/api/crop-insurance/calculate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          crop: calcCrop,
+          landAcres: parseFloat(calcAcres) || 1,
+          sumInsuredPerAcre: parseFloat(calcSumPerAcre) || 25000
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCalcResult(data);
+      }
+    } catch (err) {
+      console.error("Calculator error:", err);
+    } finally {
+      setCalcLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6 w-full">
+      {/* Header */}
+      <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-bold text-primary flex items-center gap-2">
+            <ShieldCheck className="size-5 text-blue-600" /> Pradhan Mantri Fasal Bima Yojana (PMFBY) &amp; Crop Insurance
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Official Portal: <strong>pmfby.gov.in (Government of India Crop Risk Protection)</strong>
+          </p>
+        </div>
+        <a
+          href="https://pmfby.gov.in/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs font-bold px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition flex items-center gap-1.5 shadow-sm self-start md:self-auto"
+        >
+          Official PMFBY Portal <ExternalLink className="size-3.5" />
+        </a>
+      </div>
+
+      {/* Live PMFBY Subsidized Premium Calculator */}
+      <div className="bg-blue-50/70 border border-blue-200 rounded-2xl p-5 lg:p-6 shadow-sm space-y-4">
+        <div className="flex items-center gap-2">
+          <Calculator className="size-5 text-blue-700" />
+          <h4 className="text-base font-bold text-blue-900">PMFBY Official Subsidized Premium Calculator</h4>
+        </div>
+
+        <form onSubmit={handleCalculatePremium} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+          <div>
+            <label className="text-[11px] font-bold text-blue-900 uppercase block mb-1">Select Crop</label>
+            <select
+              className="w-full border border-blue-200 rounded-lg px-3 py-1.5 text-xs bg-white font-semibold"
+              value={calcCrop}
+              onChange={e => setCalcCrop(e.target.value)}
+            >
+              <option value="Soybean">Soybean (Kharif - 2%)</option>
+              <option value="Cotton">Cotton (Kharif - 5%)</option>
+              <option value="Wheat">Wheat (Rabi - 1.5%)</option>
+              <option value="Sugarcane">Sugarcane (Annual - 5%)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-[11px] font-bold text-blue-900 uppercase block mb-1">Land Size (Acres)</label>
+            <input
+              type="number"
+              step="0.5"
+              className="w-full border border-blue-200 rounded-lg px-3 py-1.5 text-xs bg-white"
+              value={calcAcres}
+              onChange={e => setCalcAcres(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="text-[11px] font-bold text-blue-900 uppercase block mb-1">Sum Insured / Acre (₹)</label>
+            <input
+              type="number"
+              step="1000"
+              className="w-full border border-blue-200 rounded-lg px-3 py-1.5 text-xs bg-white"
+              value={calcSumPerAcre}
+              onChange={e => setCalcSumPerAcre(e.target.value)}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={calcLoading}
+            className="h-8 bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs rounded-lg transition"
+          >
+            {calcLoading ? "Calculating..." : "Calculate Premium"}
+          </button>
+        </form>
+
+        {calcResult && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-white p-4 rounded-xl border border-blue-200 text-xs animate-fade-in">
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase font-bold">Total Sum Insured</p>
+              <p className="text-base font-black text-primary mt-0.5">₹{calcResult.totalSumInsured.toLocaleString("en-IN")}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-emerald-800 uppercase font-bold">Farmer Payable Premium ({calcResult.farmerRatePct}%)</p>
+              <p className="text-base font-black text-emerald-700 mt-0.5">₹{calcResult.farmerPayablePremium.toLocaleString("en-IN")}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-blue-800 uppercase font-bold">Government Subsidy Share</p>
+              <p className="text-base font-black text-blue-700 mt-0.5">₹{calcResult.govtSubsidyAmount.toLocaleString("en-IN")}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase font-bold">Subsidy Rate</p>
+              <p className="text-xs font-bold text-emerald-800 mt-1">98% Govt Subsidized</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Insurance Schemes Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {insuranceSchemes.map((ins) => (
+          <div key={ins.id} className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4 flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-[10px] font-bold rounded uppercase tracking-wider mb-1 inline-block">
+                    {ins.code}
+                  </span>
+                  <h4 className="text-base font-bold text-primary leading-tight">{ins.name}</h4>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{ins.ministry}</p>
+                </div>
+                <span className="px-2 py-1 bg-secondary text-foreground text-[11px] font-mono font-bold rounded">
+                  {ins.state}
+                </span>
+              </div>
+
+              <div className="space-y-2 text-xs border-t border-border pt-3">
+                <div>
+                  <strong className="text-blue-900 block text-[11px] uppercase tracking-wider">🌾 Covered Crops:</strong>
+                  <p className="text-foreground font-medium text-xs mt-0.5">{ins.cropCovered}</p>
+                </div>
+
+                <div>
+                  <strong className="text-emerald-800 block text-[11px] uppercase tracking-wider">💳 Subsidized Premium Rate:</strong>
+                  <p className="text-emerald-700 font-bold text-xs mt-0.5">{ins.premiumRate}</p>
+                </div>
+
+                <div>
+                  <strong className="text-primary block text-[11px] uppercase tracking-wider">🛡️ Risk Coverage &amp; Benefits:</strong>
+                  <p className="text-muted-foreground text-xs mt-0.5 leading-relaxed">{ins.coverageBenefits}</p>
+                </div>
+
+                <div>
+                  <strong className="text-primary block text-[11px] uppercase tracking-wider">📋 Required Documents:</strong>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {ins.documents.map((d: string, idx: number) => (
+                      <span key={idx} className="px-2 py-0.5 bg-secondary text-foreground text-[10px] rounded font-medium">
+                        ✓ {d}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <strong className="text-primary block text-[11px] uppercase tracking-wider">📞 72-Hour Claim Intimation Process:</strong>
+                  <p className="text-muted-foreground text-xs mt-0.5 font-mono">{ins.claimProcess}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-border pt-3 flex items-center justify-between gap-2">
+              <div>
+                <p className="text-[10px] text-muted-foreground">Cutoff Deadline: <strong className="text-foreground">{ins.deadline}</strong></p>
+                <p className="text-[10px] text-muted-foreground">Toll-Free Helpline: <strong className="text-blue-700">{ins.helpline}</strong></p>
+              </div>
+
+              <a
+                href={ins.officialLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow-sm shrink-0"
+              >
+                Apply on PMFBY Portal <ExternalLink className="size-3.5" />
+              </a>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

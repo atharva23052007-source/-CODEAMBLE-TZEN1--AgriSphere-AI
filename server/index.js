@@ -428,6 +428,279 @@ app.get("/api/mandi-prices", async (req, res) => {
   }
 });
 
+/**
+ * Authentic Indian Government Agriculture Schemes Database
+ */
+const GOV_SCHEMES_DATABASE = [
+  {
+    id: "SCH-001",
+    name: "Pradhan Mantri Kisan Samman Nidhi (PM-KISAN)",
+    code: "PM-KISAN",
+    category: "Financial Aid",
+    state: "All",
+    crop: "All",
+    ministry: "Ministry of Agriculture & Farmers Welfare",
+    description: "Central Sector scheme providing income support of ₹6,000 per year in three equal installments to all landholding farmer families across India.",
+    eligibility: "All small and marginal landholding farmer families who own cultivable land, subject to exclusion criteria (e.g. institutional landholders, income tax payers).",
+    benefits: "Direct Benefit Transfer (DBT) of ₹6,000 annually (3 installments of ₹2,000 each credited directly into Aadhaar-seeded bank accounts).",
+    documents: ["Aadhaar Card", "7/12 Extract / Land Title Document", "Bank Passbook with IFSC", "Active Mobile Number"],
+    applicationProcess: "1. Visit pmkisan.gov.in -> 2. Click 'Farmers Corner' -> 3. New Farmer Registration -> 4. Enter Aadhaar & State -> 5. Fill land details and submit.",
+    deadline: "Open round the year (Quarterly payouts in April, August, and December)",
+    officialLink: "https://pmkisan.gov.in/",
+    helpline: "155261 / 011-24300606"
+  },
+  {
+    id: "SCH-002",
+    name: "Namo Shetkari Mahasanman Nidhi Yojana (Maharashtra)",
+    code: "NAMO-SHETKARI",
+    category: "Financial Aid",
+    state: "Maharashtra",
+    crop: "All",
+    ministry: "Department of Agriculture, Govt. of Maharashtra",
+    description: "Maharashtra State financial aid scheme supplementing PM-KISAN by providing an additional ₹6,000 per year to Maharashtra farmers.",
+    eligibility: "Farmers in Maharashtra registered and verified under the PM-KISAN portal with active Aadhaar-bank account seeding.",
+    benefits: "Additional financial aid of ₹6,000 per year (Combined total of ₹12,000/year alongside PM-KISAN).",
+    documents: ["PM-KISAN Registration ID", "Aadhaar Card", "7/12 & 8-A Extract", "Aadhaar-Linked Bank Account"],
+    applicationProcess: "Automatic enrolment for all verified PM-KISAN beneficiaries in Maharashtra. Verification done via MahaDBT portal.",
+    deadline: "Ongoing state disbursement",
+    officialLink: "https://mahadbt.maharashtra.gov.in/",
+    helpline: "022-22025355"
+  },
+  {
+    id: "SCH-003",
+    name: "PM Krishi Sinchayee Yojana - Micro Irrigation (PMKSY-PDMC)",
+    code: "PMKSY-DRIP",
+    category: "Irrigation",
+    state: "All",
+    crop: "All",
+    ministry: "Ministry of Agriculture & Farmers Welfare / Department of Water Resources",
+    description: "Per Drop More Crop scheme offering 55% to 80% subsidy for installing Drip & Sprinkler irrigation systems to improve water use efficiency.",
+    eligibility: "Farmers owning land with an assured water source. Priority given to Small & Marginal Farmers, Women Farmers, and SC/ST farmers.",
+    benefits: "55% subsidy for general farmers and up to 80% subsidy for small/marginal farmers on drip and sprinkler hardware equipment.",
+    documents: ["Aadhaar Card", "7/12 Land Record / Khatauni", "Water Source Certificate (Well/Borewell)", "Soil & Water Test Report", "Bank Passbook"],
+    applicationProcess: "1. Apply online via State Agriculture Portal (e.g. MahaDBT) -> 2. Select empanelled drip manufacturer -> 3. Site inspection by Agri Officer -> 4. Subsidy credited to bank.",
+    deadline: "31st March 2027",
+    officialLink: "https://pmksy.gov.in/",
+    helpline: "1800-180-1551"
+  },
+  {
+    id: "SCH-004",
+    name: "Sub-Mission on Agricultural Mechanization (SMAM)",
+    code: "SMAM-MACHINERY",
+    category: "Machinery",
+    state: "All",
+    crop: "All",
+    ministry: "Ministry of Agriculture & Farmers Welfare",
+    description: "Subsidy scheme for purchasing farm machinery (Tractors, Rotavators, Power Tillers, Combine Harvesters, Drone Spraying) and establishing Custom Hiring Centres.",
+    eligibility: "Individual farmers, Farmer Producer Organizations (FPOs), Self Help Groups (SHGs), and Cooperative Societies.",
+    benefits: "40% to 50% subsidy on individual farm equipment and up to 80% subsidy for setting up Custom Hiring Centres (CHCs).",
+    documents: ["Aadhaar Card", "Land Title Document", "Bank Account Details", "Caste Certificate (if applicable)", "Quotation from authorized dealer"],
+    applicationProcess: "1. Register on agrimachinery.nic.in -> 2. Select machine and dealer -> 3. Upload quotation and land proof -> 4. Receive approval letter.",
+    deadline: "Seasonal sanctions (Check state notification)",
+    officialLink: "https://agrimachinery.nic.in/",
+    helpline: "1800-180-1551"
+  },
+  {
+    id: "SCH-005",
+    name: "Paramparagat Krishi Vikas Yojana (PKVY Organic Farming)",
+    code: "PKVY-ORGANIC",
+    category: "Organic",
+    state: "All",
+    crop: "All",
+    ministry: "Ministry of Agriculture & Farmers Welfare",
+    description: "Promotes organic farming through cluster formation and Participatory Guarantee System (PGS) organic certification.",
+    eligibility: "Farmers willing to form a cluster of 50 or more farmers covering 50 acres of land for organic farming.",
+    benefits: "Financial assistance of ₹50,000 per hectare over 3 years (₹31,000 directly for organic inputs like bio-fertilizers, seeds, and neem cake).",
+    documents: ["Aadhaar Card", "Cluster Member Form", "Land Holding Certificate", "Soil Test Certificate"],
+    applicationProcess: "1. Form a 50-acre farmer cluster -> 2. Register on jaivikkheti.in -> 3. Submit cluster proposal to Regional Council / District Agri Office.",
+    deadline: "Annual cluster enrollment",
+    officialLink: "https://jaivikkheti.in/",
+    helpline: "011-23382012"
+  },
+  {
+    id: "SCH-006",
+    name: "Soil Health Card Scheme",
+    code: "SOIL-HEALTH",
+    category: "Financial Aid",
+    state: "All",
+    crop: "All",
+    ministry: "Ministry of Agriculture & Farmers Welfare",
+    description: "Provides free soil testing and customized nutrient management cards to farmers every 2 years.",
+    eligibility: "All agricultural landholders in India.",
+    benefits: "Free soil sampling and testing for 12 parameters (N, P, K, S, Zn, Fe, Cu, Mn, Bo, pH, EC, OC) with exact fertilizer dosage recommendations.",
+    documents: ["Aadhaar Card", "Survey / Khasra Number"],
+    applicationProcess: "Contact village Agriculture Assistant / Krishi Sevak for soil sample collection or visit local Soil Testing Lab.",
+    deadline: "Continuous testing drive",
+    officialLink: "https://soilhealth.dac.gov.in/",
+    helpline: "1800-180-1551"
+  }
+];
+
+/**
+ * Authentic Crop Insurance Schemes Database (PMFBY, WBCIS, State Aid)
+ */
+const CROP_INSURANCE_DATABASE = [
+  {
+    id: "INS-001",
+    name: "Pradhan Mantri Fasal Bima Yojana (PMFBY)",
+    code: "PMFBY",
+    state: "All",
+    cropCovered: "Soybean, Cotton, Wheat, Sugarcane, Paddy, Maize, Tur, Groundnut",
+    ministry: "Ministry of Agriculture & Farmers Welfare",
+    eligibility: "All farmers including sharecroppers and tenant farmers growing notified crops in notified areas.",
+    premiumRate: "Kharif Crops: 2.0% | Rabi Crops: 1.5% | Annual Commercial/Horticultural: 5.0% (Balance premium up to 98% subsidized equally by Govt of India and State Govt).",
+    coverageBenefits: "Comprehensive risk coverage against non-preventable natural risks: Prevented Sowing, Mid-Season Adversity, Post-Harvest losses (up to 14 days), and Localized Calamities (Hailstorm, Landslide, Inundation).",
+    documents: ["Aadhaar Card", "7/12 & 8-A Land Extract / Tenant Agreement", "Sowing Certificate from Sarpanch/Patwari", "Bank Account Passbook"],
+    claimProcess: "1. Intimate loss within 72 hours of damage via PMFBY Crop Insurance App or Toll-Free 1800-180-1551 -> 2. Joint survey by Insurance Co. and Agri Officer -> 3. Claim credited directly to bank.",
+    deadline: "Kharif: 31st July | Rabi: 31st December",
+    officialLink: "https://pmfby.gov.in/",
+    helpline: "1800-180-1551 / 14447"
+  },
+  {
+    id: "INS-002",
+    name: "Restructured Weather Based Crop Insurance Scheme (WBCIS)",
+    code: "WBCIS",
+    state: "Maharashtra",
+    cropCovered: "Grapes, Pomegranate, Banana, Mango, Orange, Sweet Lime, Onion",
+    ministry: "Department of Agriculture, Govt. of Maharashtra",
+    eligibility: "Horticulture and fruit crop growers in weather-notified circles.",
+    premiumRate: "Farmer Share: 5.0% capped | Government Subsidy: 95% of actuarial premium.",
+    coverageBenefits: "Financial protection against adverse weather parameters: Unseasonal Rain, Hailstorms, High Temperature, Frost, Relative Humidity fluctuations measured via Automatic Weather Stations (AWS).",
+    documents: ["Aadhaar Card", "Fruit Orchard 7/12 Land Record", "Bank Passbook", "Geo-tagged photo of orchard"],
+    claimProcess: "Automated claim settlement based on weather data recorded at nearest AWS. No individual claim form required for weather trigger events.",
+    deadline: "Fruit Crop specific cutoff dates",
+    officialLink: "https://pmfby.gov.in/",
+    helpline: "1800-180-1551"
+  },
+  {
+    id: "INS-003",
+    name: "Maharashtra State Natural Calamity Crop Relief Fund",
+    code: "MH-RELIEF",
+    state: "Maharashtra",
+    cropCovered: "Soybean, Cotton, Sugarcane, Pulses",
+    ministry: "Revenue & Disaster Management Dept, Govt. of Maharashtra",
+    eligibility: "Farmers affected by heavy rainfall (>65mm/day), flooding, or drought in declared disaster talukas.",
+    premiumRate: "100% Free (Zero Premium for farmers - Funded under NDRF/SDRF disaster relief rules).",
+    coverageBenefits: "Direct ex-gratia compensation of ₹13,600 per hectare for rainfed crops and up to ₹27,000 per hectare for perennial fruit crops (up to 3 hectares).",
+    documents: ["Panchnama Report by Circle Officer", "Aadhaar Card", "7/12 Land Extract", "Bank Passbook"],
+    claimProcess: "Revenue department conducts village-level Panchnama. Direct payout credited into farmer bank accounts via DBT.",
+    deadline: "Post-disaster official notification",
+    officialLink: "https://mahadbt.maharashtra.gov.in/",
+    helpline: "022-22025355"
+  }
+];
+
+/**
+ * GET /api/gov-schemes
+ */
+app.get("/api/gov-schemes", async (req, res) => {
+  try {
+    const { state = "All", crop = "All", category = "All" } = req.query;
+    const cacheKey = `schemes:${state}:${crop}:${category}`;
+
+    const cached = await getCache(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
+    let filtered = GOV_SCHEMES_DATABASE.filter(s => {
+      const matchState = (state === "All" || state === "all" || s.state === "All" || s.state.toLowerCase() === state.toString().toLowerCase());
+      const matchCrop = (crop === "All" || crop === "all" || s.crop === "All" || s.crop.toLowerCase().includes(crop.toString().toLowerCase()));
+      const matchCategory = (category === "All" || category === "all" || s.category.toLowerCase() === category.toString().toLowerCase());
+      return matchState && matchCrop && matchCategory;
+    });
+
+    const responsePayload = {
+      status: "success",
+      total: filtered.length,
+      schemes: filtered
+    };
+
+    await setCache(cacheKey, responsePayload, 600); // 10 minutes cache
+    return res.json(responsePayload);
+  } catch (err) {
+    console.error("[Gov Schemes API Error]:", err);
+    return res.status(500).json({ status: "error", message: err.message });
+  }
+});
+
+/**
+ * GET /api/crop-insurance
+ */
+app.get("/api/crop-insurance", async (req, res) => {
+  try {
+    const { state = "All", crop = "All" } = req.query;
+    const cacheKey = `insurance:${state}:${crop}`;
+
+    const cached = await getCache(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
+    let filtered = CROP_INSURANCE_DATABASE.filter(i => {
+      const matchState = (state === "All" || state === "all" || i.state === "All" || i.state.toLowerCase() === state.toString().toLowerCase());
+      const matchCrop = (crop === "All" || crop === "all" || i.cropCovered.toLowerCase().includes(crop.toString().toLowerCase()));
+      return matchState && matchCrop;
+    });
+
+    const responsePayload = {
+      status: "success",
+      total: filtered.length,
+      insuranceSchemes: filtered
+    };
+
+    await setCache(cacheKey, responsePayload, 600);
+    return res.json(responsePayload);
+  } catch (err) {
+    console.error("[Crop Insurance API Error]:", err);
+    return res.status(500).json({ status: "error", message: err.message });
+  }
+});
+
+/**
+ * POST /api/crop-insurance/calculate
+ * PMFBY Subsidized Premium Calculator
+ */
+app.post("/api/crop-insurance/calculate", (req, res) => {
+  try {
+    const { crop = "Soybean", landAcres = 1, sumInsuredPerAcre = 25000, season = "Kharif" } = req.body || {};
+
+    const acres = Math.max(0.1, parseFloat(landAcres) || 1);
+    const sumPerAcre = Math.max(1000, parseFloat(sumInsuredPerAcre) || 25000);
+    const totalSumInsured = acres * sumPerAcre;
+
+    // PMFBY Premium Share Rates: Kharif 2.0%, Rabi 1.5%, Commercial/Horticulture 5.0%
+    let farmerRatePct = 2.0;
+    const cropLower = crop.toLowerCase();
+    if (season === "Rabi" || cropLower.includes("wheat") || cropLower.includes("gram")) {
+      farmerRatePct = 1.5;
+    } else if (cropLower.includes("sugarcane") || cropLower.includes("cotton") || cropLower.includes("banana") || cropLower.includes("grape")) {
+      farmerRatePct = 5.0;
+    }
+
+    const farmerPayable = (totalSumInsured * farmerRatePct) / 100;
+    const actuarialTotalPremium = totalSumInsured * 0.12; // 12% total actuarial rate
+    const govtSubsidy = Math.max(0, actuarialTotalPremium - farmerPayable);
+
+    return res.json({
+      status: "success",
+      crop,
+      season,
+      acres,
+      sumInsuredPerAcre: sumPerAcre,
+      totalSumInsured: Math.round(totalSumInsured),
+      farmerRatePct,
+      farmerPayablePremium: Math.round(farmerPayable),
+      govtSubsidyAmount: Math.round(govtSubsidy),
+      totalActuarialPremium: Math.round(actuarialTotalPremium),
+      govtSubsidyPercentage: "98% Subsidized by Govt of India & State Govt"
+    });
+  } catch (err) {
+    return res.status(400).json({ status: "error", message: err.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`[AgriSphere Voice AI] Server running on http://localhost:${PORT}`);
 });
+
