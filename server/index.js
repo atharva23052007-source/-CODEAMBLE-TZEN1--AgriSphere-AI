@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import multer from "multer";
 import dotenv from "dotenv";
+import { getCache, setCache, isRedisConnected } from "./redis.js";
 
 dotenv.config();
 dotenv.config({ path: ".env.local" });
@@ -276,6 +277,9 @@ app.get("/health", (req, res) => {
     status: "ok",
     backend: "JavaScript (Node.js/Express)",
     gemini_configured: !!process.env.GEMINI_API_KEY,
+    data_gov_configured: !!process.env.DATA_GOV_API_KEY,
+    redis_connected: isRedisConnected(),
+    redis_url: process.env.REDIS_URL || "redis://localhost:6379",
     voice_architecture: "AgriSphere Gemini AI Engine"
   });
 });
@@ -307,7 +311,7 @@ app.post("/api/voice-ai", upload.single("file"), async (req, res) => {
 // Direct Voice Prompt Endpoint
 app.post("/voice-ai", async (req, res) => {
   try {
-    const { text, engine } = req.body || {};
+    const { text } = req.body || {};
     if (!text || !text.trim()) {
       return res.status(400).json({ error: "text field is required." });
     }
@@ -318,7 +322,7 @@ app.post("/voice-ai", async (req, res) => {
   }
 });
 
-// Chat Endpoint
+// Chat Endpoint with Redis Cache
 app.post("/api/chat", async (req, res) => {
   try {
     const { text } = req.body || {};
@@ -326,18 +330,101 @@ app.post("/api/chat", async (req, res) => {
       return res.status(400).json({ detail: "Text field cannot be empty." });
     }
 
-    const result = await processTextQuery(text.trim());
+    const queryKey = text.trim().toLowerCase();
+    const cacheKey = `chat:${queryKey}`;
+    const cached = await getCache(cacheKey);
 
-    return res.json({
+    if (cached) {
+      return res.json(cached);
+    }
+
+    const result = await processTextQuery(text.trim());
+    const responsePayload = {
       status: "success",
       transcription: result.transcription,
       language: result.language,
       answer: result.answer
-    });
+    };
+
+    await setCache(cacheKey, responsePayload, 600); // Cache text answers for 10 minutes
+
+    return res.json(responsePayload);
   } catch (err) {
     console.error("[Chat Error]:", err);
     const fb = generateAgriSphereFallback(req.body?.text || "");
     return res.json({ status: "success", transcription: req.body?.text || "", language: fb.language, answer: fb.answer });
+  }
+});
+
+/**
+ * Real Data.gov.in AGMARKNET Mandi Commodity Prices Proxy API with Redis Caching
+ */
+app.get("/api/mandi-prices", async (req, res) => {
+  dotenv.config();
+  const apiKey = process.env.DATA_GOV_API_KEY || "579b464db66ec23bdd000001efc3795be96440cd73d752af5e127d54";
+  const resourceId = "9ef84268-d588-465a-a308-a864a43d0070";
+
+  const { state = "all", district = "all", commodity = "all", date = "", limit = "20", offset = "0" } = req.query;
+
+  // Construct Redis cache key
+  const cacheKey = `mandi:${state}:${district}:${commodity}:${date || "all"}:${limit}:${offset}`;
+  const cachedData = await getCache(cacheKey);
+
+  if (cachedData) {
+    return res.json(cachedData);
+  }
+
+  let url = `https://api.data.gov.in/resource/${resourceId}?api-key=${apiKey}&format=json&limit=${limit}&offset=${offset}`;
+
+  if (state && state !== "all" && state !== "All States") {
+    url += `&filters[state]=${encodeURIComponent(state)}`;
+  }
+
+  if (district && district !== "all" && district !== "All Districts") {
+    url += `&filters[district]=${encodeURIComponent(district)}`;
+  }
+
+  if (commodity && commodity !== "all" && commodity !== "All Commodities") {
+    url += `&filters[commodity]=${encodeURIComponent(commodity)}`;
+  }
+
+  if (date) {
+    url += `&filters[arrival_date]=${encodeURIComponent(date)}`;
+  }
+
+  try {
+    console.log(`[Mandi Prices API] Fetching from data.gov.in: ${url}`);
+    const apiRes = await fetch(url);
+    if (!apiRes.ok) {
+      const errText = await apiRes.text().catch(() => "");
+      console.error(`[Mandi Prices API] Error ${apiRes.status}: ${errText}`);
+      return res.status(apiRes.status).json({
+        status: "error",
+        message: `data.gov.in API Error (${apiRes.status}): ${errText.slice(0, 150)}`
+      });
+    }
+
+    const data = await apiRes.json();
+    const resultPayload = {
+      status: "success",
+      total: data.total || 0,
+      count: data.count || 0,
+      limit: parseInt(limit, 10),
+      offset: parseInt(offset, 10),
+      records: data.records || []
+    };
+
+    // Cache Mandi Prices response in Redis for 300 seconds (5 minutes)
+    await setCache(cacheKey, resultPayload, 300);
+
+    return res.json(resultPayload);
+
+  } catch (err) {
+    console.error("[Mandi Prices API] Fetch Exception:", err.message);
+    return res.status(500).json({
+      status: "error",
+      message: `Failed to reach data.gov.in API: ${err.message}`
+    });
   }
 });
 
