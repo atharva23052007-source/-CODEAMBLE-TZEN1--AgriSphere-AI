@@ -25,6 +25,7 @@ export const Route = createFileRoute("/officer")({
 
 function OfficerDashboard() {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<"appraisal" | "fertilizer" | "aadhaar">("appraisal");
   const [searchTerm, setSearchTerm] = useState("");
   const [appraisals, setAppraisals] = useState([
     { id: "DBT-882", name: "Satara FPO Cotton Aid", farmers: 84, amount: "₹4,20,000", submittedBy: "Operator #12-D", status: "Pending" },
@@ -32,6 +33,22 @@ function OfficerDashboard() {
     { id: "DBT-884", name: "Wai Soybean Machinery", farmers: 12, amount: "₹3,15,000", submittedBy: "Operator #03-F", status: "Approved" },
     { id: "DBT-885", name: "Jawali General Crop Bima", farmers: 310, amount: "₹24,50,000", submittedBy: "Operator #11-B", status: "Approved" },
     { id: "DBT-886", name: "Mahabaleshwar Cold Storage", farmers: 4, amount: "₹5,00,050", submittedBy: "Operator #04-C", status: "Pending" },
+  ]);
+
+  const [fertilizerLogs] = useState([
+    { id: "FL-101", date: "2026-08-01", district: "Satara", farmerId: "F-9921", type: "Urea", quantity: "150 kg", subsidy: "₹1,200" },
+    { id: "FL-102", date: "2026-08-02", district: "Pune", farmerId: "F-3120", type: "DAP", quantity: "50 kg", subsidy: "₹800" },
+    { id: "FL-103", date: "2026-08-03", district: "Sangli", farmerId: "F-8411", type: "Urea", quantity: "200 kg", subsidy: "₹1,600" },
+    { id: "FL-104", date: "2026-08-04", district: "Kolhapur", farmerId: "F-5092", type: "MOP", quantity: "100 kg", subsidy: "₹950" },
+    { id: "FL-105", date: "2026-08-05", district: "Satara", farmerId: "F-1102", type: "NPK", quantity: "75 kg", subsidy: "₹1,100" },
+  ]);
+
+  const [aadhaarAudits] = useState([
+    { id: "AL-901", timestamp: "2026-08-07 10:15:22", action: "e-KYC Verification", aadhaarLast4: "4921", status: "Success", operator: "Op-12-D" },
+    { id: "AL-902", timestamp: "2026-08-07 11:42:09", action: "Subsidy Claim Auth", aadhaarLast4: "1833", status: "Failed", operator: "Op-09-A" },
+    { id: "AL-903", timestamp: "2026-08-08 09:05:41", action: "Bank Acc Linking", aadhaarLast4: "7720", status: "Success", operator: "Op-03-F" },
+    { id: "AL-904", timestamp: "2026-08-08 09:30:12", action: "e-KYC Verification", aadhaarLast4: "3199", status: "Success", operator: "Op-11-B" },
+    { id: "AL-905", timestamp: "2026-08-08 14:21:05", action: "Subsidy Claim Auth", aadhaarLast4: "8801", status: "Success", operator: "Op-04-C" },
   ]);
 
   const handleApprove = (id: string, name: string) => {
@@ -90,22 +107,25 @@ function OfficerDashboard() {
             <span className="px-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">
               Administrative Control
             </span>
-            <button className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition bg-[oklch(0.35_0.15_255)]/10 text-[oklch(0.35_0.15_255)]">
-              <Landmark className="size-4.5" />
+            <button 
+              onClick={() => setActiveTab("appraisal")}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs transition ${activeTab === "appraisal" ? "bg-[oklch(0.35_0.15_255)]/10 text-[oklch(0.35_0.15_255)] font-bold" : "font-semibold text-foreground/80 hover:bg-secondary"}`}
+            >
+              <Landmark className={`size-4.5 ${activeTab === "appraisal" ? "" : "text-muted-foreground"}`} />
               Sub-Grant Appraisal
             </button>
             <button 
-              onClick={() => toast.info("Displaying regional fertilizer allocation records...")}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition text-foreground/80 hover:bg-secondary"
+              onClick={() => setActiveTab("fertilizer")}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs transition ${activeTab === "fertilizer" ? "bg-[oklch(0.35_0.15_255)]/10 text-[oklch(0.35_0.15_255)] font-bold" : "font-semibold text-foreground/80 hover:bg-secondary"}`}
             >
-              <FileCheck className="size-4.5 text-muted-foreground" />
+              <FileCheck className={`size-4.5 ${activeTab === "fertilizer" ? "" : "text-muted-foreground"}`} />
               Fertilizer Subsidy Logs
             </button>
             <button 
-              onClick={() => toast.info("Opening cryptographic Aadhaar ledger...")}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition text-foreground/80 hover:bg-secondary"
+              onClick={() => setActiveTab("aadhaar")}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs transition ${activeTab === "aadhaar" ? "bg-[oklch(0.35_0.15_255)]/10 text-[oklch(0.35_0.15_255)] font-bold" : "font-semibold text-foreground/80 hover:bg-secondary"}`}
             >
-              <ShieldCheck className="size-4.5 text-muted-foreground" />
+              <ShieldCheck className={`size-4.5 ${activeTab === "aadhaar" ? "" : "text-muted-foreground"}`} />
               Aadhaar Ledger Auditing
             </button>
           </nav>
@@ -139,11 +159,14 @@ function OfficerDashboard() {
         <header className="flex justify-between items-center gap-4 flex-wrap mb-8 pb-4 border-b border-border/40">
           <div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-[oklch(0.35_0.15_255)] flex items-center gap-2">
-              <Landmark className="size-8 text-[oklch(0.35_0.15_255)]" />
-              DBT disbursement panel
+              {activeTab === "appraisal" && <><Landmark className="size-8 text-[oklch(0.35_0.15_255)]" /> DBT Disbursement Panel</>}
+              {activeTab === "fertilizer" && <><FileCheck className="size-8 text-[oklch(0.35_0.15_255)]" /> Fertilizer Subsidy Logs</>}
+              {activeTab === "aadhaar" && <><ShieldCheck className="size-8 text-[oklch(0.35_0.15_255)]" /> Aadhaar Ledger Auditing</>}
             </h2>
             <p className="text-xs sm:text-xs text-muted-foreground mt-0.5 leading-snug">
-              State Ministry of Agriculture & Integrated DBT Registry of Maharashtra. All disbursement actions require cryptographic approval.
+              {activeTab === "appraisal" && "State Ministry of Agriculture & Integrated DBT Registry of Maharashtra. All disbursement actions require cryptographic approval."}
+              {activeTab === "fertilizer" && "Regional tracking of fertilizer distribution and subsidy allocation across districts."}
+              {activeTab === "aadhaar" && "Cryptographic ledger tracking e-KYC verifications and biometric authentication logs."}
             </p>
           </div>
           <div className="flex items-center gap-2.5">
@@ -167,115 +190,202 @@ function OfficerDashboard() {
           {/* Main List */}
           <div className="xl:col-span-2 space-y-6">
             
-            {/* KPI Cards row */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="p-4 bg-white border border-border rounded-2xl shadow-sm">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">State Sub-grants Value</span>
-                <div className="text-2xl font-extrabold text-[oklch(0.35_0.15_255)]">₹45.3L</div>
-                <span className="text-[10px] text-green-600 block mt-1">Disbursed successfully</span>
-              </div>
-              <div className="p-4 bg-white border border-border rounded-2xl shadow-sm">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Pending Appraisals</span>
-                <div className="text-2xl font-extrabold text-tile-amber-icon">
-                  {appraisals.filter(a => a.status === "Pending").length} Files
+            {/* Conditional Content based on activeTab */}
+            {activeTab === "appraisal" && (
+              <>
+                {/* KPI Cards row */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="p-4 bg-white border border-border rounded-2xl shadow-sm">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">State Sub-grants Value</span>
+                    <div className="text-2xl font-extrabold text-[oklch(0.35_0.15_255)]">₹45.3L</div>
+                    <span className="text-[10px] text-green-600 block mt-1">Disbursed successfully</span>
+                  </div>
+                  <div className="p-4 bg-white border border-border rounded-2xl shadow-sm">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Pending Appraisals</span>
+                    <div className="text-2xl font-extrabold text-tile-amber-icon">
+                      {appraisals.filter(a => a.status === "Pending").length} Files
+                    </div>
+                    <span className="text-[10px] text-muted-foreground block mt-1">Awaiting verification</span>
+                  </div>
+                  <div className="p-4 bg-white border border-border rounded-2xl shadow-sm">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">District FPOs Managed</span>
+                    <div className="text-2xl font-extrabold text-foreground">18 Centers</div>
+                    <span className="text-[10px] text-green-600 block mt-1">Audit status: OK</span>
+                  </div>
                 </div>
-                <span className="text-[10px] text-muted-foreground block mt-1">Awaiting verification</span>
-              </div>
-              <div className="p-4 bg-white border border-border rounded-2xl shadow-sm">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground block mb-1">District FPOs Managed</span>
-                <div className="text-2xl font-extrabold text-foreground">18 Centers</div>
-                <span className="text-[10px] text-green-600 block mt-1">Audit status: OK</span>
-              </div>
-            </div>
 
-            {/* Appraisal List Container */}
-            <div className="bg-white border border-border rounded-2xl p-5 shadow-sm space-y-4">
-              <div className="flex justify-between items-center flex-wrap gap-2">
-                <h3 className="text-sm font-bold text-[oklch(0.35_0.15_255)]">Pending Sub-grant Appraisals</h3>
-                <div className="relative w-full sm:max-w-xs">
-                  <input
-                    type="text"
-                    className="w-full pl-8 pr-3 py-1.5 border border-border rounded-xl text-xs bg-white focus:outline-none"
-                    placeholder="Search scheme name, Operator..."
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                  />
-                  <Search className="size-3.5 absolute top-2 left-2 text-muted-foreground" />
+                {/* Appraisal List Container */}
+                <div className="bg-white border border-border rounded-2xl p-5 shadow-sm space-y-4">
+                  <div className="flex justify-between items-center flex-wrap gap-2">
+                    <h3 className="text-sm font-bold text-[oklch(0.35_0.15_255)]">Pending Sub-grant Appraisals</h3>
+                    <div className="relative w-full sm:max-w-xs">
+                      <input
+                        type="text"
+                        className="w-full pl-8 pr-3 py-1.5 border border-border rounded-xl text-xs bg-white focus:outline-none"
+                        placeholder="Search scheme name, Operator..."
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                      />
+                      <Search className="size-3.5 absolute top-2 left-2 text-muted-foreground" />
+                    </div>
+                  </div>
+
+                  {/* Table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-border text-muted-foreground font-semibold">
+                          <th className="py-2.5">ID</th>
+                          <th>Appraisal Scheme</th>
+                          <th>Farmers</th>
+                          <th>Amount</th>
+                          <th>FPO Agent</th>
+                          <th>Status Check</th>
+                          <th className="text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/60">
+                        {filteredAppraisals.map((a, i) => (
+                          <tr key={i} className="hover:bg-secondary/25 transition">
+                            <td className="py-4 font-mono font-medium text-muted-foreground">{a.id}</td>
+                            <td className="font-bold text-foreground">{a.name}</td>
+                            <td>{a.farmers}</td>
+                            <td className="font-semibold text-primary">{a.amount}</td>
+                            <td>{a.submittedBy}</td>
+                            <td>
+                              {a.status === "Approved" ? (
+                                <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-green-50 text-green-700 rounded-full font-semibold">
+                                  <CheckCircle className="size-3" /> Approved
+                                </span>
+                              ) : a.status === "Rejected" ? (
+                                <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-red-50 text-red-700 rounded-full font-semibold">
+                                  <XCircle className="size-3" /> Rejected
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full font-semibold">
+                                  <Clock className="size-3" /> Pending Eval
+                                </span>
+                              )}
+                            </td>
+                            <td className="text-right">
+                              {a.status === "Pending" ? (
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    onClick={() => handleApprove(a.id, a.name)}
+                                    className="size-7 flex items-center justify-center text-white bg-primary rounded-lg hover:bg-primary/95 transition shadow-sm"
+                                    title="Approve & Disburse"
+                                  >
+                                    <Check className="size-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleReject(a.id, a.name)}
+                                    className="size-7 flex items-center justify-center text-white bg-red-650 rounded-lg hover:bg-red-750 transition shadow-sm"
+                                    title="Reject / Return"
+                                  >
+                                    <XCircle className="size-4" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-[10px] text-muted-foreground font-semibold uppercase">Closed</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                        {filteredAppraisals.length === 0 && (
+                          <tr>
+                            <td colSpan={7} className="py-6 text-center text-muted-foreground font-medium">
+                              No sub-grants found.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {activeTab === "fertilizer" && (
+              <div className="bg-white border border-border rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex justify-between items-center flex-wrap gap-2">
+                  <h3 className="text-sm font-bold text-[oklch(0.35_0.15_255)]">Recent Subsidy Allocations</h3>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-border text-muted-foreground font-semibold">
+                        <th className="py-2.5">Log ID</th>
+                        <th>Date</th>
+                        <th>District</th>
+                        <th>Farmer ID</th>
+                        <th>Type</th>
+                        <th>Quantity</th>
+                        <th className="text-right">Subsidy Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/60">
+                      {fertilizerLogs.map((log, i) => (
+                        <tr key={i} className="hover:bg-secondary/25 transition">
+                          <td className="py-4 font-mono font-medium text-muted-foreground">{log.id}</td>
+                          <td>{log.date}</td>
+                          <td className="font-medium text-foreground">{log.district}</td>
+                          <td className="font-mono text-muted-foreground">{log.farmerId}</td>
+                          <td><span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md font-semibold">{log.type}</span></td>
+                          <td>{log.quantity}</td>
+                          <td className="text-right font-semibold text-primary">{log.subsidy}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
+            )}
 
-              {/* Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-border text-muted-foreground font-semibold">
-                      <th className="py-2.5">ID</th>
-                      <th>Appraisal Scheme</th>
-                      <th>Farmers</th>
-                      <th>Amount</th>
-                      <th>FPO Agent</th>
-                      <th>Status Check</th>
-                      <th className="text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/60">
-                    {filteredAppraisals.map((a, i) => (
-                      <tr key={i} className="hover:bg-secondary/25 transition">
-                        <td className="py-4 font-mono font-medium text-muted-foreground">{a.id}</td>
-                        <td className="font-bold text-foreground">{a.name}</td>
-                        <td>{a.farmers}</td>
-                        <td className="font-semibold text-primary">{a.amount}</td>
-                        <td>{a.submittedBy}</td>
-                        <td>
-                          {a.status === "Approved" ? (
-                            <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-green-50 text-green-700 rounded-full font-semibold">
-                              <CheckCircle className="size-3" /> Approved
-                            </span>
-                          ) : a.status === "Rejected" ? (
-                            <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-red-50 text-red-700 rounded-full font-semibold">
-                              <XCircle className="size-3" /> Rejected
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full font-semibold">
-                              <Clock className="size-3" /> Pending Eval
-                            </span>
-                          )}
-                        </td>
-                        <td className="text-right">
-                          {a.status === "Pending" ? (
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                onClick={() => handleApprove(a.id, a.name)}
-                                className="size-7 flex items-center justify-center text-white bg-primary rounded-lg hover:bg-primary/95 transition shadow-sm"
-                                title="Approve & Disburse"
-                              >
-                                <Check className="size-4" />
-                              </button>
-                              <button
-                                onClick={() => handleReject(a.id, a.name)}
-                                className="size-7 flex items-center justify-center text-white bg-red-650 rounded-lg hover:bg-red-750 transition shadow-sm"
-                                title="Reject / Return"
-                              >
-                                <XCircle className="size-4" />
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-[10px] text-muted-foreground font-semibold uppercase">Closed</span>
-                          )}
-                        </td>
+            {activeTab === "aadhaar" && (
+              <div className="bg-white border border-border rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex justify-between items-center flex-wrap gap-2">
+                  <h3 className="text-sm font-bold text-[oklch(0.35_0.15_255)]">Cryptographic Ledger</h3>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-border text-muted-foreground font-semibold">
+                        <th className="py-2.5">Audit ID</th>
+                        <th>Timestamp</th>
+                        <th>Action Performed</th>
+                        <th>Aadhaar (Last 4)</th>
+                        <th>Operator</th>
+                        <th className="text-right">Status</th>
                       </tr>
-                    ))}
-                    {filteredAppraisals.length === 0 && (
-                      <tr>
-                        <td colSpan={7} className="py-6 text-center text-muted-foreground font-medium">
-                          No sub-grants found.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-border/60">
+                      {aadhaarAudits.map((audit, i) => (
+                        <tr key={i} className="hover:bg-secondary/25 transition">
+                          <td className="py-4 font-mono font-medium text-muted-foreground">{audit.id}</td>
+                          <td className="text-muted-foreground">{audit.timestamp}</td>
+                          <td className="font-bold text-foreground">{audit.action}</td>
+                          <td className="font-mono text-muted-foreground">•••• {audit.aadhaarLast4}</td>
+                          <td>{audit.operator}</td>
+                          <td className="text-right">
+                            {audit.status === "Success" ? (
+                              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-green-50 text-green-700 rounded-full font-semibold">
+                                <CheckCircle className="size-3" /> Validated
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-red-50 text-red-700 rounded-full font-semibold">
+                                <XCircle className="size-3" /> Failed
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
+            )}
             
           </div>
 
@@ -307,7 +417,9 @@ function OfficerDashboard() {
             <div className="p-4 border border-dashed border-border bg-white rounded-2xl">
               <h4 className="font-bold text-xs text-tile-blue-icon uppercase mb-2">Audit Instructions</h4>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Appraisals marked as "Approved" are instantly queue-mapped to the state distribution ledger. Please confirm regional mandi pricing parity reports before authorizing claims above ₹5,00,000.
+                {activeTab === "appraisal" && "Appraisals marked as 'Approved' are instantly queue-mapped to the state distribution ledger. Please confirm regional mandi pricing parity reports before authorizing claims above ₹5,00,000."}
+                {activeTab === "fertilizer" && "Ensure all regional allocations adhere to the state fertilizer quotas. Flag any discrepancies in bulk requests immediately."}
+                {activeTab === "aadhaar" && "Aadhaar e-KYC verifications are strictly governed by UIDAI policies. Any failed authorizations should be investigated for identity mismatch."}
               </p>
             </div>
             
