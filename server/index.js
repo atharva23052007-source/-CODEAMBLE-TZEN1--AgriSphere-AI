@@ -84,56 +84,63 @@ async function queryGeminiApi(prompt, systemInstruction = "", isJson = false) {
   const key = (process.env.GEMINI_API_KEY || "").trim();
 
   if (!key) {
+    console.warn("[Gemini API] No GEMINI_API_KEY found in process.env.");
     return null;
   }
 
   const models = [
-    "gemini-2.0-flash",
-    "gemini-2.5-flash",
     "gemini-flash-latest",
-    "gemini-2.0-flash-lite",
-    "gemini-1.5-flash",
-    "gemini-pro"
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite"
   ];
 
   for (const model of models) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
-      const bodyPayload = {
-        contents: [{ role: "user", parts: [{ text: prompt }] }]
-      };
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+        const bodyPayload = {
+          contents: [{ role: "user", parts: [{ text: prompt }] }]
+        };
 
-      if (systemInstruction) {
-        bodyPayload.system_instruction = { parts: [{ text: systemInstruction }] };
-      }
-
-      if (isJson) {
-        bodyPayload.generationConfig = { responseMimeType: "application/json" };
-      }
-
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bodyPayload)
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) {
-          console.log(`[Gemini API Success] Model '${model}' generated response.`);
-          return text;
+        if (systemInstruction) {
+          bodyPayload.system_instruction = { parts: [{ text: systemInstruction }] };
         }
-      } else {
-        const errText = await res.text().catch(() => "");
-        if (res.status === 429) {
-          console.warn(`[Gemini API Notice] Model '${model}' API Quota Exceeded (429). Trying next fallback.`);
+
+        if (isJson) {
+          bodyPayload.generationConfig = { responseMimeType: "application/json" };
+        }
+
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(bodyPayload)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+            console.log(`[Gemini API Success] Model '${model}' generated response.`);
+            return text;
+          }
         } else {
-          console.warn(`[Gemini API] Model '${model}' returned ${res.status}: ${errText.slice(0, 120)}`);
+          const errText = await res.text().catch(() => "");
+          if (res.status === 503 && attempt < 3) {
+            console.warn(`[Gemini API 503] High demand for '${model}'. Retrying attempt ${attempt + 1}...`);
+            await new Promise(r => setTimeout(r, 600 * attempt));
+            continue;
+          } else if (res.status === 429) {
+            console.warn(`[Gemini API Notice] Model '${model}' API Quota Exceeded (429).`);
+            break; // Try next model
+          } else {
+            console.warn(`[Gemini API] Model '${model}' returned ${res.status}: ${errText.slice(0, 120)}`);
+            break;
+          }
         }
+      } catch (err) {
+        console.warn(`[Gemini API Exception] Model '${model}':`, err.message);
+        break;
       }
-    } catch (err) {
-      console.warn(`[Gemini API Exception] Model '${model}':`, err.message);
     }
   }
 
@@ -164,46 +171,51 @@ async function processVoiceWithGemini(audioBuffer, mimeType = "audio/webm", hist
       '  "answer": "<farmer-friendly advice in same language>"\n' +
       "}";
 
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
-      const payload = {
-        system_instruction: { parts: [{ text: systemInstruction }] },
-        contents: [
-          {
-            role: "user",
-            parts: [
-              { inline_data: { mime_type: cleanMimeType, data: base64Audio } },
-              { text: "Transcribe farmer query, detect language (English/Hindi/Marathi), and answer in same language. JSON only." }
-            ]
-          }
-        ],
-        generationConfig: { responseMimeType: "application/json" }
-      };
+    const models = ["gemini-flash-latest", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
 
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+    for (const model of models) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+        const payload = {
+          system_instruction: { parts: [{ text: systemInstruction }] },
+          contents: [
+            {
+              role: "user",
+              parts: [
+                { inline_data: { mime_type: cleanMimeType, data: base64Audio } },
+                { text: "Transcribe farmer query, detect language (English/Hindi/Marathi), and answer in same language. JSON only." }
+              ]
+            }
+          ],
+          generationConfig: { responseMimeType: "application/json" }
+        };
 
-      if (res.ok) {
-        const data = await res.json();
-        const rawText = data.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("").trim();
-        if (rawText) {
-          try {
-            const parsed = JSON.parse(rawText);
-            return {
-              transcription: parsed.transcription || "Farmer voice query",
-              language: parsed.language || "English",
-              answer: parsed.answer || "Thank you for your question."
-            };
-          } catch {
-            return { transcription: "Farmer voice query", language: "English", answer: rawText };
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const rawText = data.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("").trim();
+          if (rawText) {
+            try {
+              const parsed = JSON.parse(rawText);
+              console.log(`[Gemini Voice Success] Model '${model}' processed audio.`);
+              return {
+                transcription: parsed.transcription || "Farmer voice query",
+                language: parsed.language || "English",
+                answer: parsed.answer || "Thank you for your question."
+              };
+            } catch {
+              return { transcription: "Farmer voice query", language: "English", answer: rawText };
+            }
           }
         }
+      } catch (err) {
+        console.warn(`[Voice AI] Gemini Multimodal error with model '${model}':`, err.message);
       }
-    } catch (err) {
-      console.warn("[Voice AI] Gemini Multimodal error:", err.message);
     }
   }
 
