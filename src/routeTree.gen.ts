@@ -13,11 +13,13 @@ import { Route as OperatorRouteImport } from './routes/operator'
 import { Route as OfficerRouteImport } from './routes/officer'
 import { Route as FarmerRouteImport } from './routes/farmer'
 import { Route as BuyerRouteImport } from './routes/buyer'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginOperatorRouteImport } from './routes/login/operator'
 import { Route as LoginOfficerRouteImport } from './routes/login/officer'
 import { Route as LoginFarmerRouteImport } from './routes/login/farmer'
 import { Route as LoginBuyerRouteImport } from './routes/login/buyer'
+import { Route as LoginAdminRouteImport } from './routes/login/admin'
 
 const OperatorRoute = OperatorRouteImport.update({
   id: '/operator',
@@ -37,6 +39,11 @@ const FarmerRoute = FarmerRouteImport.update({
 const BuyerRoute = BuyerRouteImport.update({
   id: '/buyer',
   path: '/buyer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -64,13 +71,20 @@ const LoginBuyerRoute = LoginBuyerRouteImport.update({
   path: '/login/buyer',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginAdminRoute = LoginAdminRouteImport.update({
+  id: '/login/admin',
+  path: '/login/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/buyer': typeof BuyerRoute
   '/farmer': typeof FarmerRoute
   '/officer': typeof OfficerRoute
   '/operator': typeof OperatorRoute
+  '/login/admin': typeof LoginAdminRoute
   '/login/buyer': typeof LoginBuyerRoute
   '/login/farmer': typeof LoginFarmerRoute
   '/login/officer': typeof LoginOfficerRoute
@@ -78,10 +92,12 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/buyer': typeof BuyerRoute
   '/farmer': typeof FarmerRoute
   '/officer': typeof OfficerRoute
   '/operator': typeof OperatorRoute
+  '/login/admin': typeof LoginAdminRoute
   '/login/buyer': typeof LoginBuyerRoute
   '/login/farmer': typeof LoginFarmerRoute
   '/login/officer': typeof LoginOfficerRoute
@@ -90,10 +106,12 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/buyer': typeof BuyerRoute
   '/farmer': typeof FarmerRoute
   '/officer': typeof OfficerRoute
   '/operator': typeof OperatorRoute
+  '/login/admin': typeof LoginAdminRoute
   '/login/buyer': typeof LoginBuyerRoute
   '/login/farmer': typeof LoginFarmerRoute
   '/login/officer': typeof LoginOfficerRoute
@@ -103,10 +121,12 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/buyer'
     | '/farmer'
     | '/officer'
     | '/operator'
+    | '/login/admin'
     | '/login/buyer'
     | '/login/farmer'
     | '/login/officer'
@@ -114,10 +134,12 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/buyer'
     | '/farmer'
     | '/officer'
     | '/operator'
+    | '/login/admin'
     | '/login/buyer'
     | '/login/farmer'
     | '/login/officer'
@@ -125,10 +147,12 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/buyer'
     | '/farmer'
     | '/officer'
     | '/operator'
+    | '/login/admin'
     | '/login/buyer'
     | '/login/farmer'
     | '/login/officer'
@@ -137,10 +161,12 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   BuyerRoute: typeof BuyerRoute
   FarmerRoute: typeof FarmerRoute
   OfficerRoute: typeof OfficerRoute
   OperatorRoute: typeof OperatorRoute
+  LoginAdminRoute: typeof LoginAdminRoute
   LoginBuyerRoute: typeof LoginBuyerRoute
   LoginFarmerRoute: typeof LoginFarmerRoute
   LoginOfficerRoute: typeof LoginOfficerRoute
@@ -175,6 +201,13 @@ declare module '@tanstack/react-router' {
       path: '/buyer'
       fullPath: '/buyer'
       preLoaderRoute: typeof BuyerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -212,15 +245,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginBuyerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login/admin': {
+      id: '/login/admin'
+      path: '/login/admin'
+      fullPath: '/login/admin'
+      preLoaderRoute: typeof LoginAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   BuyerRoute: BuyerRoute,
   FarmerRoute: FarmerRoute,
   OfficerRoute: OfficerRoute,
   OperatorRoute: OperatorRoute,
+  LoginAdminRoute: LoginAdminRoute,
   LoginBuyerRoute: LoginBuyerRoute,
   LoginFarmerRoute: LoginFarmerRoute,
   LoginOfficerRoute: LoginOfficerRoute,
