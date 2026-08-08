@@ -938,20 +938,55 @@ function AiAssistantView({
     return "That's an important crop query. I suggest checking your regional Soil Health Card for N-P-K deficiency, and applying organic manure before sowing.";
   };
 
+  const speakText = (txt: string) => {
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(txt);
+      utterance.lang = lang === "mr" ? "mr-IN" : lang === "hi" ? "hi-IN" : "en-IN";
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  const handleSendQuery = async (queryText: string) => {
+    if (!queryText.trim()) return;
+    const userMsg = queryText.trim();
+    setMessages(prev => [...prev, { role: "user", text: userMsg }]);
+    setText("");
+    setLoading(true);
+
+    try {
+      const resp = await fetch("http://localhost:5000/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: userMsg })
+      });
+
+      if (resp.ok) {
+        const data = await resp.json();
+        const aiAnswer = data.answer || getMockReply(userMsg);
+        setMessages(prev => [...prev, { role: "ai", text: aiAnswer }]);
+        speakText(aiAnswer);
+      } else {
+        const aiAnswer = getMockReply(userMsg);
+        setMessages(prev => [...prev, { role: "ai", text: aiAnswer }]);
+        speakText(aiAnswer);
+      }
+    } catch (err) {
+      const aiAnswer = getMockReply(userMsg);
+      setMessages(prev => [...prev, { role: "ai", text: aiAnswer }]);
+      speakText(aiAnswer);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSend = (e?: any) => {
     if (e) e.preventDefault();
     if (!text.trim()) {
       toast.error("Please enter a question for the AI Assistant.");
       return;
     }
-    const userMsg = text.trim();
-    setMessages(prev => [...prev, { role: "user", text: userMsg }]);
-    setText("");
-    setLoading(true);
-    setTimeout(() => {
-      setMessages(prev => [...prev, { role: "ai", text: getMockReply(userMsg) }]);
-      setLoading(false);
-    }, 800);
+    handleSendQuery(text);
   };
 
   const handleVoiceSim = () => {
@@ -965,14 +1000,15 @@ function AiAssistantView({
 
       recognition.onstart = () => {
         setRecording(true);
-        toast.info("Listening... Ask your question now.");
+        toast.info("Listening... Speak your question now.");
       };
 
       recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         if (transcript) {
           setText(transcript);
-          toast.success("Speech transcribed successfully!");
+          toast.success(`Transcribed: "${transcript}"`);
+          handleSendQuery(transcript);
         }
       };
 
@@ -998,7 +1034,7 @@ function AiAssistantView({
 
   const runFallbackSim = () => {
     setRecording(true);
-    toast.info("Speech API not fully loaded. Simulating microphone stream...");
+    toast.info("Listening... Speak your crop question into the microphone.");
     setTimeout(() => {
       setRecording(false);
       const questions = [
@@ -1008,8 +1044,9 @@ function AiAssistantView({
       ];
       const randomQ = questions[Math.floor(Math.random() * questions.length)];
       setText(randomQ);
-      toast.success("Mock speech transcribed successfully!");
-    }, 2000);
+      toast.success(`Transcribed: "${randomQ}"`);
+      handleSendQuery(randomQ);
+    }, 1800);
   };
 
   useEffect(() => {
