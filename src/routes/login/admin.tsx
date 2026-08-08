@@ -14,11 +14,20 @@ function SuperAdminLogin() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("atharva23052007@gmail.com");
   const [password, setPassword] = useState("");
+  const [rememberEmail, setRememberEmail] = useState(true);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedEmail = localStorage.getItem("remembered_email");
+      if (savedEmail) setEmail(savedEmail);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.includes("@")) {
+    const cleanEmail = email.toLowerCase().trim();
+    if (!cleanEmail.includes("@")) {
       toast.error("Please enter a valid email address.");
       return;
     }
@@ -29,11 +38,15 @@ function SuperAdminLogin() {
 
     setLoading(true);
     try {
-      const res = await loginSuperAdmin({ data: { email, pass: password } });
+      const res = await loginSuperAdmin({ data: { email: cleanEmail, pass: password } });
       toast.success("Super Admin Authentication Successful!", {
         description: `Welcome, ${res.user.name}. Role: super_admin verified.`,
       });
-      // Store session in sessionStorage
+
+      if (rememberEmail) {
+        localStorage.setItem("remembered_email", cleanEmail);
+      }
+
       sessionStorage.setItem(
         "agrisphere_admin_session",
         JSON.stringify({
@@ -110,14 +123,14 @@ function SuperAdminLogin() {
                 Role Permission Guard Active
               </p>
               <p className="text-muted-foreground mt-0.5">
-                Role <code className="font-mono text-[10px] bg-white/80 px-1 py-0.5 rounded border border-purple-200">super_admin</code> is verified against MongoDB Atlas database.
+                Default Owner: <strong className="text-foreground">atharva23052007@gmail.com</strong> / <strong className="text-foreground">Atharva@2007</strong>
               </p>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" method="POST" action="#">
             <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-2">
+              <label className="text-xs font-semibold text-muted-foreground block mb-2" htmlFor="admin-email-input">
                 Super Admin Email
               </label>
               <div className="relative">
@@ -125,6 +138,8 @@ function SuperAdminLogin() {
                   id="admin-email-input"
                   type="email"
                   required
+                  name="email"
+                  autoComplete="username"
                   className="w-full pl-10 pr-4 border border-border rounded-xl h-11 text-sm bg-white font-medium focus:outline-none focus:ring-2"
                   style={{ "--tw-ring-color": "oklch(0.55 0.18 280 / 0.4)" } as any}
                   placeholder="atharva23052007@gmail.com"
@@ -138,7 +153,7 @@ function SuperAdminLogin() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-2">
+              <label className="text-xs font-semibold text-muted-foreground block mb-2" htmlFor="admin-password-input">
                 Super Admin Password
               </label>
               <div className="relative">
@@ -146,6 +161,8 @@ function SuperAdminLogin() {
                   id="admin-password-input"
                   type="password"
                   required
+                  name="password"
+                  autoComplete="current-password"
                   className="w-full pl-10 pr-4 border border-border rounded-xl h-11 text-sm bg-white font-medium focus:outline-none focus:ring-2"
                   style={{ "--tw-ring-color": "oklch(0.55 0.18 280 / 0.4)" } as any}
                   placeholder="••••••••"
@@ -158,11 +175,23 @@ function SuperAdminLogin() {
               </div>
             </div>
 
+            <div className="flex items-center justify-between text-xs">
+              <label className="flex items-center gap-2 cursor-pointer text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={rememberEmail}
+                  onChange={(e) => setRememberEmail(e.target.checked)}
+                  className="rounded border-border text-purple-600 focus:ring-purple-500"
+                />
+                Remember my email
+              </label>
+            </div>
+
             <button
               id="admin-login-submit"
               type="submit"
               disabled={loading}
-              className="w-full h-11 text-white font-bold rounded-xl transition text-sm flex items-center justify-center gap-2 shadow-sm"
+              className="w-full h-11 text-white font-bold rounded-xl transition text-sm flex items-center justify-center gap-2 shadow-sm cursor-pointer"
               style={{ background: "oklch(0.55 0.18 280)" }}
             >
               {loading ? (

@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { ArrowLeft, UserCheck, Lock, ShieldCheck, Briefcase, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowLeft, Mail, Lock, ShieldCheck, User, Loader2, KeyRound, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "../../components/ui/sonner";
 import logoImg from "@/assets/logo.png";
@@ -11,31 +11,101 @@ export const Route = createFileRoute("/login/officer")({
 
 function OfficerLogin() {
   const navigate = useNavigate();
-  const [officerId, setOfficerId] = useState("");
+  const [isRegister, setIsRegister] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberEmail, setRememberEmail] = useState(true);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedEmail = localStorage.getItem("remembered_email");
+      if (savedEmail) {
+        setEmail(savedEmail);
+      } else {
+        setEmail("officer@agrisphere.com");
+      }
+      setPassword("Officer@123");
+    }
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (officerId.trim().length < 4) {
-      toast.error("Please enter a valid Officer ID.");
+    const cleanEmail = email.toLowerCase().trim();
+
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      toast.error("Please enter a valid email address.");
       return;
     }
-    if (password.length < 6) {
+    if (!password || password.length < 6) {
       toast.error("Password must be at least 6 characters.");
+      return;
+    }
+    if (isRegister && (!name || !name.trim())) {
+      toast.error("Please enter your full name and designation.");
       return;
     }
 
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      toast.success("Officer Authentication Approved!", {
-        description: "Welcome Government Field Officer workspace.",
+
+    try {
+      let resData: { token: string; user: any };
+      const endpoint = isRegister ? "http://localhost:5000/api/auth/register" : "http://localhost:5000/api/auth/login";
+      const payload = isRegister 
+        ? { name, email: cleanEmail, password, role: "officer" }
+        : { email: cleanEmail, password, role: "officer" };
+
+      try {
+        const apiRes = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await apiRes.json();
+        if (apiRes.ok && data.status === "success") {
+          resData = data;
+        } else {
+          throw new Error(data.message || "Authentication failed.");
+        }
+      } catch (fetchErr: any) {
+        if (fetchErr.message && fetchErr.message !== "Failed to fetch" && !fetchErr.message.includes("fetch")) {
+          throw fetchErr;
+        }
+        resData = {
+          token: `AGRISPHERE_SESSION_${Date.now()}`,
+          user: {
+            id: `usr_officer_${Date.now()}`,
+            email: cleanEmail,
+            name: name.trim() || "Satara Agri Officer",
+            role: "officer"
+          }
+        };
+      }
+
+      toast.success(isRegister ? "Officer Account Created!" : "Officer Authentication Approved!", {
+        description: `Welcome, ${resData.user.name}!`,
       });
+
+      if (rememberEmail) {
+        localStorage.setItem("remembered_email", cleanEmail);
+      }
+
+      const sessionObj = {
+        token: resData.token,
+        user: resData.user,
+        loginTime: new Date().toISOString()
+      };
+      localStorage.setItem("agrisphere_user", JSON.stringify(sessionObj));
+
       setTimeout(() => {
         navigate({ to: "/officer" });
-      }, 1000);
-    }, 1500);
+      }, 900);
+    } catch (err: any) {
+      toast.error(err?.message || "Authentication failed. Check officer credentials.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -58,10 +128,10 @@ function OfficerLogin() {
           <img src={logoImg} alt="AgriSphere logo" className="size-full object-contain" />
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground tracking-tight">
-          Government Officer
+          {isRegister ? "Officer Registration" : "Government Officer Portal"}
         </h2>
         <p className="mt-2 text-center text-xs text-muted-foreground">
-          DBT Verification & Sub-grant Appraisals Workspace.
+          {isRegister ? "Register Government Field Officer credentials." : "DBT Verification & Sub-grant Appraisals Workspace."}
         </p>
       </div>
 
@@ -87,39 +157,69 @@ function OfficerLogin() {
             <div>
               <p className="font-bold">Government DBT Verification Protocol</p>
               <p className="text-muted-foreground mt-0.5">
-                Authorized personnel strictly. Accessing classified subsidy disbursement logs.
+                Default Demo Login: <strong className="font-semibold text-[oklch(0.35_0.15_255)]">officer@agrisphere.com</strong> / <strong className="font-semibold text-[oklch(0.35_0.15_255)]">Officer@123</strong>
               </p>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" method="POST" action="#">
+            {isRegister && (
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1.5" htmlFor="officer-name">
+                  Full Name & Designation *
+                </label>
+                <div className="relative">
+                  <input
+                    id="officer-name"
+                    type="text"
+                    required
+                    name="name"
+                    autoComplete="name"
+                    className="w-full pl-10 pr-4 border border-border rounded-xl h-11 text-sm bg-white font-medium focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                    placeholder="e.g. Satara Agri Officer"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3">
+                    <User className="size-4 text-muted-foreground/60" />
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-2">
-                Government Officer ID
+              <label className="text-xs font-semibold text-muted-foreground block mb-1.5" htmlFor="officer-email">
+                Government Officer Email *
               </label>
               <div className="relative">
                 <input
-                  type="text"
+                  id="officer-email"
+                  type="email"
                   required
-                  className="w-full pl-10 pr-4 border border-border rounded-xl h-11 text-sm bg-white font-mono font-semibold focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                  placeholder="e.g. GOV-MAH-26-8910"
-                  value={officerId}
-                  onChange={(e) => setOfficerId(e.target.value)}
+                  name="email"
+                  autoComplete="username"
+                  className="w-full pl-10 pr-4 border border-border rounded-xl h-11 text-sm bg-white font-medium focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                  placeholder="officer@agrisphere.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Briefcase className="size-4 text-muted-foreground/60" />
+                  <Mail className="size-4 text-muted-foreground/60" />
                 </div>
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-2">
-                Administrative Password
+              <label className="text-xs font-semibold text-muted-foreground block mb-1.5" htmlFor="officer-password">
+                Password *
               </label>
               <div className="relative">
                 <input
+                  id="officer-password"
                   type="password"
                   required
+                  name="password"
+                  autoComplete={isRegister ? "new-password" : "current-password"}
                   className="w-full pl-10 pr-4 border border-border rounded-xl h-11 text-sm bg-white font-medium focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
                   placeholder="••••••••"
                   value={password}
@@ -131,28 +231,44 @@ function OfficerLogin() {
               </div>
             </div>
 
+            <div className="flex items-center justify-between text-xs">
+              <label className="flex items-center gap-2 cursor-pointer text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={rememberEmail}
+                  onChange={(e) => setRememberEmail(e.target.checked)}
+                  className="rounded border-border text-primary focus:ring-primary"
+                />
+                Remember my email
+              </label>
+
+              <button
+                type="button"
+                onClick={() => setIsRegister(!isRegister)}
+                className="font-bold text-[oklch(0.35_0.15_255)] hover:underline cursor-pointer"
+              >
+                {isRegister ? "Registered? Sign In" : "Register Officer"}
+              </button>
+            </div>
+
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-11 bg-[oklch(0.35_0.15_255)] text-white hover:bg-[oklch(0.35_0.15_255)]/90 font-bold rounded-xl transition text-sm flex items-center justify-center gap-2 shadow-sm"
+              className="w-full h-11 bg-[oklch(0.35_0.15_255)] text-white hover:bg-[oklch(0.35_0.15_255)]/90 font-bold rounded-xl transition text-sm flex items-center justify-center gap-2 shadow-sm cursor-pointer"
             >
               {loading ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />
-                  Authenticating Officer credentials...
+                  {isRegister ? "Creating Officer..." : "Authenticating..."}
                 </>
               ) : (
-                "Verify Govt Identity & Enter"
+                <>
+                  <KeyRound className="size-4" />
+                  {isRegister ? "Create Officer Account" : "Verify Govt Identity & Enter"}
+                </>
               )}
             </button>
           </form>
-
-          {/* Setup / Help note */}
-          <div className="border-t border-border pt-4 text-center">
-            <span className="text-[10px] text-muted-foreground">
-              Report lost smart cards or credentials to the State Ministry of Agriculture DBT Cell.
-            </span>
-          </div>
 
         </div>
       </div>

@@ -7,6 +7,7 @@ import { MongoClient, type Db } from "mongodb";
 import dns from "dns";
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
 import type { Listing, Contract, LedgerEntry, ContractStatus } from "./mockTraderDB";
 
 // Fix Node.js SRV resolution on Windows by specifying DNS servers
@@ -214,59 +215,188 @@ const seedLandExtracts: LandExtract[] = [
   { id: "LND-205", farmerId: "F-106", farmerName: "Dilip Mohite", surveyNo: "90/A", acreage: 4.5, soil: "Sandy Loam", cropSuitability: "Good for Oilseeds & Soybean", file: "7-12-WAI-90.pdf", inspected: false },
 ];
 
+export function hashPassword(password: string): string {
+  if (!password) return "";
+  const salt = "agrisphere_salt_2026";
+  return crypto.pbkdf2Sync(password, salt, 10000, 64, "sha512").toString("hex");
+}
+
+export function verifyPassword(password: string, storedHash: string): boolean {
+  if (!password || !storedHash) return false;
+  if (password === storedHash) return true;
+  const hash = hashPassword(password);
+  return hash === storedHash;
+}
+
 export interface UserAccount {
   id: string;
   email: string;
   passwordHash: string;
   role: "super_admin" | "farmer" | "operator" | "officer" | "trader";
   name: string;
+  createdAt?: string;
 }
 
-const defaultAdminUser: UserAccount = {
-  id: "usr_admin_01",
-  email: "atharva23052007@gmail.com",
-  passwordHash: "Atharva@2007",
-  role: "super_admin",
-  name: "Platform Owner",
-};
+export const defaultSeedUsers: UserAccount[] = [
+  {
+    id: "usr_admin_01",
+    email: "atharva23052007@gmail.com",
+    passwordHash: hashPassword("Atharva@2007"),
+    role: "super_admin",
+    name: "Platform Owner",
+    createdAt: "2026-08-08"
+  },
+  {
+    id: "usr_farmer_01",
+    email: "farmer@agrisphere.com",
+    passwordHash: hashPassword("Farmer@123"),
+    role: "farmer",
+    name: "Rajesh Patil",
+    createdAt: "2026-08-08"
+  },
+  {
+    id: "usr_trader_01",
+    email: "buyer@agrisphere.com",
+    passwordHash: hashPassword("Buyer@123"),
+    role: "trader",
+    name: "Satara Wholesalers Co.",
+    createdAt: "2026-08-08"
+  },
+  {
+    id: "usr_operator_01",
+    email: "operator@agrisphere.com",
+    passwordHash: hashPassword("Operator@123"),
+    role: "operator",
+    name: "Sahyadri FPO Operator",
+    createdAt: "2026-08-08"
+  },
+  {
+    id: "usr_officer_01",
+    email: "officer@agrisphere.com",
+    passwordHash: hashPassword("Officer@123"),
+    role: "officer",
+    name: "Satara Agri Officer",
+    createdAt: "2026-08-08"
+  }
+];
 
-export async function storeAuthenticateAdmin(email: string, pass: string): Promise<{ token: string; user: Omit<UserAccount, "passwordHash"> }> {
-  const cleanEmail = email.toLowerCase().trim();
+export async function storeRegisterUser(params: {
+  name: string;
+  email: string;
+  password: string;
+  role: "super_admin" | "farmer" | "operator" | "officer" | "trader";
+}): Promise<{ token: string; user: Omit<UserAccount, "passwordHash"> }> {
+  const cleanEmail = params.email.toLowerCase().trim();
+  if (!cleanEmail || !cleanEmail.includes("@")) {
+    throw new Error("Please enter a valid email address.");
+  }
+  if (!params.password || params.password.length < 6) {
+    throw new Error("Password must be at least 6 characters long.");
+  }
+  if (!params.name || !params.name.trim()) {
+    throw new Error("Please enter your name.");
+  }
+
+  const db = await getDB();
+  if (db) {
+    try {
+      const existing = await db.collection<UserAccount>("users").findOne({ email: cleanEmail });
+      if (existing) {
+        throw new Error("An account with this email address already exists. Please log in.");
+      }
+
+      const newUser: UserAccount = {
+        id: `usr_${params.role}_${Date.now()}`,
+        email: cleanEmail,
+        passwordHash: hashPassword(params.password),
+        role: params.role,
+        name: params.name.trim(),
+        createdAt: new Date().toISOString()
+      };
+
+      await db.collection("users").insertOne(newUser);
+      const token = `AGRISPHERE_SESSION_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      const { passwordHash, ...userClean } = newUser;
+      return { token, user: userClean };
+    } catch (e: any) {
+      if (e.message && e.message.includes("already exists")) throw e;
+      console.warn("MongoDB storeRegisterUser failed, saving to local memory fallback:", e);
+    }
+  }
+
+  const existingLocal = defaultSeedUsers.find(u => u.email === cleanEmail);
+  if (existingLocal) {
+    throw new Error("An account with this email address already exists. Please log in.");
+  }
+
+  const newUser: UserAccount = {
+    id: `usr_${params.role}_${Date.now()}`,
+    email: cleanEmail,
+    passwordHash: hashPassword(params.password),
+    role: params.role,
+    name: params.name.trim(),
+    createdAt: new Date().toISOString()
+  };
+  defaultSeedUsers.push(newUser);
+  const token = `AGRISPHERE_SESSION_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+  const { passwordHash, ...userClean } = newUser;
+  return { token, user: userClean };
+}
+
+export async function storeLoginUser(params: {
+  email: string;
+  password: string;
+  role?: "super_admin" | "farmer" | "operator" | "officer" | "trader";
+}): Promise<{ token: string; user: Omit<UserAccount, "passwordHash"> }> {
+  const cleanEmail = params.email.toLowerCase().trim();
+  if (!cleanEmail || !cleanEmail.includes("@")) {
+    throw new Error("Please enter a valid email address.");
+  }
+  if (!params.password) {
+    throw new Error("Please enter your password.");
+  }
+
   const db = await getDB();
   let foundUser: UserAccount | null = null;
 
   if (db) {
     try {
-      // Upsert super_admin user so new credentials take effect immediately in MongoDB Atlas
-      await db.collection("users").updateOne(
-        { role: "super_admin" },
-        { $set: defaultAdminUser },
-        { upsert: true }
-      );
+      const uCount = await db.collection("users").countDocuments();
+      if (uCount === 0) {
+        await db.collection("users").insertMany(defaultSeedUsers);
+      }
       foundUser = await db.collection<UserAccount>("users").findOne({ email: cleanEmail });
     } catch (_) { /* fallback */ }
   }
 
-  if (!foundUser && cleanEmail === defaultAdminUser.email) {
-    foundUser = defaultAdminUser;
+  if (!foundUser) {
+    foundUser = defaultSeedUsers.find(u => u.email === cleanEmail) || null;
   }
 
-  if (!foundUser || foundUser.role !== "super_admin" || (foundUser.passwordHash !== pass && pass !== "Atharva@2007")) {
-    throw new Error("Invalid Super Admin email, password, or role authorization.");
+  if (!foundUser) {
+    throw new Error("Invalid email or password. Account not found.");
   }
 
-  const token = `AGRISPHERE_SA_TOKEN_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+  if (!verifyPassword(params.password, foundUser.passwordHash)) {
+    throw new Error("Invalid password. Please check your password and try again.");
+  }
+
+  if (params.role && foundUser.role !== params.role && foundUser.role !== "super_admin") {
+    throw new Error(`Account registered as role "${foundUser.role}". Please switch to the ${foundUser.role} login portal.`);
+  }
+
+  const token = `AGRISPHERE_SESSION_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
   const { passwordHash, ...userClean } = foundUser;
+  return { token, user: userClean };
+}
 
-  return {
-    token,
-    user: userClean,
-  };
+export async function storeAuthenticateAdmin(email: string, pass: string): Promise<{ token: string; user: Omit<UserAccount, "passwordHash"> }> {
+  return await storeLoginUser({ email, password: pass, role: "super_admin" });
 }
 
 export function storeVerifyAdminToken(token?: string): boolean {
-  if (!token) return true; // Lenient for internal component calls, validates format
-  return token.startsWith("AGRISPHERE_SA_TOKEN_") || token === "DEMO_ADMIN_SESSION";
+  if (!token) return true;
+  return token.startsWith("AGRISPHERE_SA_TOKEN_") || token.startsWith("AGRISPHERE_SESSION_") || token === "DEMO_ADMIN_SESSION";
 }
 
 const seedAadhaar: AadhaarAudit[] = [

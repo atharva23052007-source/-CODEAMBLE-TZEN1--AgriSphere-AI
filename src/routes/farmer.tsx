@@ -18,6 +18,7 @@ import {
   Droplets,
   Wind,
   CloudRain,
+  LogOut,
   Headphones,
   Sparkles,
   Mic,
@@ -37,6 +38,26 @@ import {
   Eye,
   RotateCcw,
   TrendingUp,
+  CheckCircle2,
+  Loader2,
+  ExternalLink,
+  Calculator,
+  Tractor,
+  FlaskConical,
+  Droplet,
+  ShoppingBag,
+  CreditCard,
+  Sun,
+  ShieldAlert,
+  Layers,
+  ArrowRight,
+  Zap,
+  RefreshCw,
+  Scale,
+  Building2,
+  Coins,
+  Edit3,
+  X
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -64,7 +85,7 @@ type Lang = "en" | "mr" | "hi";
 
 const nav = [
   { id: "home", label: "Home", icon: Home },
-  { id: "services", label: "Services", icon: LayoutGrid },
+  { id: "services", label: "Farm Management", icon: LayoutGrid },
   { id: "ai", label: "AI Assistant", icon: Bot },
   { id: "docs", label: "My Documents", icon: FileText },
   { id: "profile", label: "Profile", icon: User },
@@ -440,6 +461,18 @@ function Index() {
                   Satara, Maharashtra
                   <ChevronDown className="size-4 text-muted-foreground" />
                 </button>
+                <button
+                  onClick={() => {
+                    localStorage.removeItem("agrisphere_user");
+                    toast.success("Logged out successfully.");
+                    window.location.href = "/login/farmer";
+                  }}
+                  title="Logout"
+                  className="flex items-center gap-1.5 h-11 px-3.5 rounded-full border border-border bg-white hover:bg-rose-50 hover:text-rose-700 transition text-xs font-semibold shadow-sm cursor-pointer"
+                >
+                  <LogOut className="size-4" />
+                  Logout
+                </button>
               </div>
             </header>
 
@@ -477,38 +510,53 @@ function Index() {
 
                   {/* Info row */}
                   <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-5">
-                    {/* Weather */}
-                    <div className="rounded-2xl bg-card border border-border p-5 lg:p-6 shadow-sm">
-                      <div className="flex items-center gap-2 mb-4">
-                        <CloudSun className="size-5 text-primary" />
-                        <h3 className="text-base lg:text-lg font-semibold">{L.weather}</h3>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-5xl lg:text-6xl font-extrabold tracking-tight">
-                            28°C
+                    {/* Your Farm Profit */}
+                    <div className="rounded-2xl bg-card border border-border p-5 lg:p-6 shadow-sm flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <TrendingUp className="size-5 text-emerald-600" />
+                            <h3 className="text-base lg:text-lg font-bold text-foreground">Your Farm Profit</h3>
                           </div>
-                          <p className="text-muted-foreground mt-1 text-sm">{L.partly}</p>
+                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-extrabold rounded-full uppercase tracking-wider">
+                            94% Confidence
+                          </span>
                         </div>
-                        <div className="text-right border-l border-border pl-4">
-                          <span className="text-xs text-muted-foreground block font-medium">Tomorrow's Rain</span>
-                          <div className="flex items-center gap-1 justify-end mt-1 text-primary">
-                            <CloudRain className="size-4" />
-                            <span className="text-base font-bold">60%</span>
+
+                        <div className="flex items-baseline justify-between border-b border-border pb-3">
+                          <div>
+                            <span className="text-[11px] font-bold text-muted-foreground uppercase">Estimated Net Profit</span>
+                            <div className="text-3xl lg:text-4xl font-black text-emerald-600 tracking-tight mt-0.5">
+                              +₹1,24,600
+                            </div>
                           </div>
-                          <span className="text-[11px] text-muted-foreground block font-medium">Light Showers</span>
+                          <div className="text-right">
+                            <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                              +52.3% ROI
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                          <div className="p-2.5 bg-accent/40 rounded-xl border border-border">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase block">Estimated Revenue</span>
+                            <span className="text-sm font-bold text-primary mt-0.5 block">₹2,44,600</span>
+                            <span className="text-[9px] text-muted-foreground">50 Qtl × ₹4,892/Qtl</span>
+                          </div>
+                          <div className="p-2.5 bg-accent/40 rounded-xl border border-border">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase block">Total Farming Cost</span>
+                            <span className="text-sm font-bold text-amber-700 mt-0.5 block">₹1,20,000</span>
+                            <span className="text-[9px] text-muted-foreground">Seeds, Fertilizer, Labor</span>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="mt-5 grid grid-cols-3 gap-2 pt-4 border-t border-border">
-                        <Stat icon={Droplets} label={L.humidity} value="68%" />
-                        <Stat icon={Wind} label={L.wind} value="12 km/h" />
-                        <Stat icon={CloudRain} label={L.rain} value="20%" />
-                      </div>
-
-                      <div className="mt-4 flex items-center gap-2 text-sm text-primary bg-accent/60 rounded-lg px-3 py-2">
-                        <MapPin className="size-4" />
-                        Satara, Maharashtra
+                      <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs bg-accent/60 rounded-xl px-3.5 py-2">
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <IndianRupee className="size-3.5 text-primary" />
+                          <span className="font-medium text-[11px]">Break-even Price:</span>
+                        </div>
+                        <span className="font-extrabold text-primary text-xs">₹2,400 <span className="text-[10px] font-normal text-muted-foreground">/ Qtl</span></span>
                       </div>
                     </div>
 
@@ -929,20 +977,6 @@ function AiAssistantView({
   const [recording, setRecording] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const getMockReply = (q: string) => {
-    const qLower = q.toLowerCase();
-    if (qLower.includes("soybean") || qLower.includes("yellow") || qLower.includes("mosaic")) {
-      return "Yellow Mosaic Virus in Soybean is spread by whiteflies. Control them by spraying Thiamethoxam 25% WG (40g/acre) or Acetamiprid 20% SP (50g/acre). Uproot infected plants immediately.";
-    }
-    if (qLower.includes("fertilizer") || qLower.includes("sugarcane") || qLower.includes("nitrogen")) {
-      return "For sugarcane, apply 250 kg Nitrogen, 115 kg Phosphorus, and 115 kg Potassium per hectare. Split Nitrogen into 3 doses: planting, 60 days, and 120 days of growth.";
-    }
-    if (qLower.includes("water") || qLower.includes("irrigation") || qLower.includes("drip")) {
-      return "Drip irrigation is recommended in Maharashtra. Ensure watering during Soybean flowering (35-40 days) and pod development (65-70 days) to maximize seed yield.";
-    }
-    return "That's an important crop query. I suggest checking your regional Soil Health Card for N-P-K deficiency, and applying organic manure before sowing.";
-  };
-
   const speakText = (txt: string) => {
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
@@ -966,20 +1000,20 @@ function AiAssistantView({
         body: JSON.stringify({ text: userMsg })
       });
 
-      if (resp.ok) {
-        const data = await resp.json();
-        const aiAnswer = data.answer || getMockReply(userMsg);
-        setMessages(prev => [...prev, { role: "ai", text: aiAnswer }]);
-        speakText(aiAnswer);
+      const data = await resp.json().catch(() => ({}));
+
+      if (resp.ok && data.status === "success" && data.answer) {
+        setMessages(prev => [...prev, { role: "ai", text: data.answer }]);
+        speakText(data.answer);
       } else {
-        const aiAnswer = getMockReply(userMsg);
-        setMessages(prev => [...prev, { role: "ai", text: aiAnswer }]);
-        speakText(aiAnswer);
+        const errorMsg = data.message || `Backend API error (${resp.status}). Please check your GEMINI_API_KEY in .env file.`;
+        setMessages(prev => [...prev, { role: "ai", text: `⚠️ ${errorMsg}` }]);
+        toast.error(errorMsg);
       }
-    } catch (err) {
-      const aiAnswer = getMockReply(userMsg);
-      setMessages(prev => [...prev, { role: "ai", text: aiAnswer }]);
-      speakText(aiAnswer);
+    } catch (err: any) {
+      const errorMsg = "Unable to connect to AI server at http://localhost:5000. Ensure the Node backend is running.";
+      setMessages(prev => [...prev, { role: "ai", text: `⚠️ ${errorMsg}` }]);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -1097,135 +1131,613 @@ function AiAssistantView({
   );
 }
 
+interface FarmRecord {
+  id: string;
+  farmerId: string;
+  farmName: string;
+  cropName: string;
+  area: number;
+  season: string;
+  status: string;
+  soilType?: string;
+  plantingDate?: string;
+  updatedAt?: string;
+}
+
 function ServicesView({ selectedService, setSelectedService, mounted }: { selectedService: string | null; setSelectedService: any; mounted: boolean }) {
-  const [crop, setCrop] = useState("");
-  const [stage, setStage] = useState("");
-  const [notes, setNotes] = useState("");
-  const [advice, setAdvice] = useState<string | null>(null);
-  const [adviceLoading, setAdviceLoading] = useState(false);
+  const [farms, setFarms] = useState<FarmRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [seasonFilter, setSeasonFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
 
-  const [mandi, setMandi] = useState("Latur");
-  const [mandiCrop, setMandiCrop] = useState("Soybean");
+  // Modal / Form state for Add and Edit
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingFarm, setEditingFarm] = useState<FarmRecord | null>(null);
 
-  const [land, setLand] = useState("");
-  const [income, setIncome] = useState("");
-  const [schemeState, setSchemeState] = useState("Maharashtra");
-  const [eligible, setEligible] = useState<any>(null);
+  // Form Field States
+  const [farmName, setFarmName] = useState("");
+  const [cropName, setCropName] = useState("");
+  const [area, setArea] = useState("");
+  const [season, setSeason] = useState("Kharif");
+  const [status, setStatus] = useState("Growing");
+  const [soilType, setSoilType] = useState("Black Cotton Soil");
+  const [plantingDate, setPlantingDate] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [insSurvey, setInsSurvey] = useState("");
-  const [insCover, setInsCover] = useState("");
-  const [insFileUploaded, setInsFileUploaded] = useState(false);
-  const [insProgress, setInsProgress] = useState<number | null>(null);
-  const [insResult, setInsResult] = useState<any>(null);
+  const defaultInitialFarms: FarmRecord[] = [
+    { id: "FARM-101", farmerId: "farmer_patil", farmName: "Satara Main Field", cropName: "Soybean (JS-335)", area: 4.5, season: "Kharif", status: "Growing", soilType: "Black Cotton Soil", plantingDate: "2026-06-15", updatedAt: "2026-08-08" },
+    { id: "FARM-102", farmerId: "farmer_patil", farmName: "Koregaon Riverside", cropName: "Sugarcane (Co-86032)", area: 6.0, season: "Annual", status: "Sown", soilType: "Loamy Soil", plantingDate: "2026-01-20", updatedAt: "2026-08-08" },
+    { id: "FARM-103", farmerId: "farmer_patil", farmName: "Wai Hillside Plot", cropName: "Turmeric (Rajapuri)", area: 2.5, season: "Kharif", status: "Flowering", soilType: "Red Sandy Soil", plantingDate: "2026-05-10", updatedAt: "2026-08-08" },
+    { id: "FARM-104", farmerId: "farmer_patil", farmName: "North Acre Plot", cropName: "Wheat (Sharbati)", area: 3.0, season: "Rabi", status: "Harvested", soilType: "Alluvial Soil", plantingDate: "2025-11-15", updatedAt: "2026-08-08" }
+  ];
 
-  const handleAdvice = (e: any) => {
-    e.preventDefault();
-    if (!crop || !stage) {
-      toast.error("Please choose a crop type and growth stage.");
-      return;
-    }
-    setAdviceLoading(true);
-    setTimeout(() => {
-      setAdviceLoading(false);
-      setAdvice(`Recommended Actions for ${crop} at ${stage} stage: Current Satara weather forecasts high soil humidity. Sow on raised seed beds. Treat seeds with Trichoderma (10g/kg). Split Nitrogen doses into 3 equal applications (planting, vegetative, and flowering). Keep soil moisture around 60%.`);
-      toast.success("AI Crop advice compiled successfully!");
-    }, 905);
-  };
-
-  const handleSchemes = (e: any) => {
-    e.preventDefault();
-    if (!land || isNaN(Number(land)) || Number(land) <= 0) {
-      toast.error("Please enter a valid farm land size (in acres)");
-      return;
-    }
-    setEligible({
-      pmKisan: Number(land) <= 5 ? "Eligible (₹6,000 yearly verified under Satara smallholder status)" : "Ineligible (Exceeds size limits)",
-      falybima: "Eligible (Subsidy coverage: 98% premium paid by Gov)"
-    });
-    toast.success("Scheme verification completed!");
-  };
-
-  const handleInsurance = (e: any) => {
-    e.preventDefault();
-    if (!insSurvey || !insCover) {
-      toast.error("Please enter survey number and desired coverage amount");
-      return;
-    }
-    if (!insFileUploaded) {
-      toast.error("Please upload land document (7/12 Extract) before applying");
-      return;
-    }
-    setInsResult({ policyNo: `PMFBY-${Date.now().toString().slice(-6)}`, premium: Number(insCover) * 0.02 });
-    toast.success("Subsidized Crop Insurance successfully activated!");
-  };
-
-  const triggerUpload = () => {
-    setInsProgress(0);
-    const interval = setInterval(() => {
-      setInsProgress(p => {
-        if (p === null) return null;
-        if (p >= 100) {
-          clearInterval(interval);
-          setInsFileUploaded(true);
-          toast.success("7/12 land extract successfully uploaded and verified!");
-          return null;
+  // Fetch Farms from Backend API with localStorage fallback
+  const fetchFarms = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("http://localhost:5000/api/farms");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.farms && Array.isArray(data.farms)) {
+          setFarms(data.farms);
+          localStorage.setItem("agrisphere_farms", JSON.stringify(data.farms));
+          setLoading(false);
+          return;
         }
-        return p + 25;
-      });
-    }, 150);
+      }
+    } catch (err) {
+      console.warn("Backend API fetch failed, loading from local cache...", err);
+    }
+
+    const cached = localStorage.getItem("agrisphere_farms");
+    if (cached) {
+      try {
+        setFarms(JSON.parse(cached));
+      } catch {
+        setFarms(defaultInitialFarms);
+      }
+    } else {
+      setFarms(defaultInitialFarms);
+    }
+    setLoading(false);
   };
+
+  useEffect(() => {
+    fetchFarms();
+  }, []);
+
+  const handleOpenAddModal = () => {
+    setEditingFarm(null);
+    setFarmName("");
+    setCropName("");
+    setArea("3.0");
+    setSeason("Kharif");
+    setStatus("Growing");
+    setSoilType("Black Cotton Soil");
+    setPlantingDate(new Date().toISOString().split("T")[0]);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (farm: FarmRecord) => {
+    setEditingFarm(farm);
+    setFarmName(farm.farmName);
+    setCropName(farm.cropName);
+    setArea(farm.area.toString());
+    setSeason(farm.season);
+    setStatus(farm.status);
+    setSoilType(farm.soilType || "Loamy Soil");
+    setPlantingDate(farm.plantingDate || "");
+    setIsModalOpen(true);
+  };
+
+  const handleSubmitFarm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!farmName.trim() || !cropName.trim() || !area || isNaN(Number(area)) || Number(area) <= 0) {
+      toast.error("Please enter a valid Farm Name, Crop Name, and Area (in Acres).");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const payload = {
+      farmName: farmName.trim(),
+      cropName: cropName.trim(),
+      area: parseFloat(area),
+      season,
+      status,
+      soilType: soilType || "Loamy Soil",
+      plantingDate: plantingDate || new Date().toISOString().split("T")[0]
+    };
+
+    if (editingFarm) {
+      // EDIT existing farm
+      try {
+        await fetch(`http://localhost:5000/api/farms/${editingFarm.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+      } catch (err) {
+        console.warn("Backend update failed, updating local state:", err);
+      }
+
+      const updatedList = farms.map(f => f.id === editingFarm.id ? { ...f, ...payload, updatedAt: new Date().toISOString().split("T")[0] } : f);
+      setFarms(updatedList);
+      localStorage.setItem("agrisphere_farms", JSON.stringify(updatedList));
+      toast.success(`Farm "${farmName}" updated successfully!`);
+    } else {
+      // ADD new farm
+      let createdFarm: FarmRecord = {
+        id: `FARM-${Date.now().toString().slice(-5)}`,
+        farmerId: "farmer_patil",
+        ...payload,
+        updatedAt: new Date().toISOString().split("T")[0]
+      };
+
+      try {
+        const res = await fetch("http://localhost:5000/api/farms", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.farm) createdFarm = data.farm;
+        }
+      } catch (err) {
+        console.warn("Backend add failed, saving to local state:", err);
+      }
+
+      const newList = [createdFarm, ...farms];
+      setFarms(newList);
+      localStorage.setItem("agrisphere_farms", JSON.stringify(newList));
+      toast.success(`Added new farm "${farmName}" (${cropName})!`);
+    }
+
+    setIsSubmitting(false);
+    setIsModalOpen(false);
+  };
+
+  const handleDeleteFarm = async (farm: FarmRecord) => {
+    if (!window.confirm(`Are you sure you want to delete "${farm.farmName}" (${farm.cropName})?`)) {
+      return;
+    }
+
+    try {
+      await fetch(`http://localhost:5000/api/farms/${farm.id}`, { method: "DELETE" });
+    } catch (err) {
+      console.warn("Backend delete failed, removing locally:", err);
+    }
+
+    const newList = farms.filter(f => f.id !== farm.id);
+    setFarms(newList);
+    localStorage.setItem("agrisphere_farms", JSON.stringify(newList));
+    toast.success(`Deleted farm "${farm.farmName}"`);
+  };
+
+  // Filtered Farms Calculation
+  const filteredFarms = farms.filter(f => {
+    const matchesSearch = f.farmName.toLowerCase().includes(searchQuery.toLowerCase()) || f.cropName.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSeason = seasonFilter === "All" || f.season.toLowerCase() === seasonFilter.toLowerCase();
+    const matchesStatus = statusFilter === "All" || f.status.toLowerCase() === statusFilter.toLowerCase();
+    return matchesSearch && matchesSeason && matchesStatus;
+  });
+
+  // Summary Statistics
+  const totalFields = farms.length;
+  const totalArea = farms.reduce((acc, f) => acc + (Number(f.area) || 0), 0).toFixed(1);
+  const activeCropsCount = farms.filter(f => f.status !== "Harvested" && f.status !== "Fallow").length;
+  const harvestedCount = farms.filter(f => f.status === "Harvested" || f.status === "Harvesting").length;
 
   if (!selectedService) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-2 w-full">
-        {[{ id: "crop-advice", title: "Crop Advice", desc: "Get AI based crop advisory" },
-           { id: "market-prices", title: "Market Prices", desc: "Check regional mandi trends" },
-           { id: "gov-schemes", title: "Gov Schemes", desc: "Eligibility checker Tool" },
-           { id: "insurance", title: "Insurance", desc: "Subsidized crop insurance" }].map(s => (
-          <button key={s.id} onClick={() => setSelectedService(s.id)} className="text-left bg-card hover:bg-secondary/40 border border-border p-5 rounded-2xl shadow-sm transition">
-            <h4 className="font-bold text-primary text-base">{s.title}</h4>
-            <p className="text-xs text-muted-foreground mt-1">{s.desc}</p>
-            <span className="inline-block mt-3 text-xs font-semibold text-primary">Open Tool →</span>
+      <div className="flex flex-col gap-6 w-full animate-fade-in">
+        {/* Header */}
+        <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-primary font-bold text-lg lg:text-xl">
+              <Sprout className="size-6 text-primary" />
+              <span>Farm & Crop Management</span>
+            </div>
+            <p className="text-xs lg:text-sm text-muted-foreground mt-1">
+              Add, track, edit, and manage your crop fields, acreage, cultivation seasons, and harvest status.
+            </p>
+          </div>
+          <button
+            onClick={handleOpenAddModal}
+            className="h-11 px-5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl text-xs lg:text-sm transition flex items-center gap-2 shadow-sm shrink-0 cursor-pointer"
+          >
+            <Plus className="size-4" />
+            Add New Farm / Crop
           </button>
-        ))}
+        </div>
+
+        {/* Summary Statistics */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-card border border-border rounded-2xl p-4 lg:p-5 shadow-sm flex items-center gap-4">
+            <div className="size-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+              <MapPin className="size-6" />
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground font-medium block">Total Fields</span>
+              <span className="text-xl lg:text-2xl font-extrabold text-foreground">{totalFields} Plots</span>
+            </div>
+          </div>
+
+          <div className="bg-card border border-border rounded-2xl p-4 lg:p-5 shadow-sm flex items-center gap-4">
+            <div className="size-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+              <Scale className="size-6" />
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground font-medium block">Total Cultivated Area</span>
+              <span className="text-xl lg:text-2xl font-extrabold text-foreground">{totalArea} Acres</span>
+            </div>
+          </div>
+
+          <div className="bg-card border border-border rounded-2xl p-4 lg:p-5 shadow-sm flex items-center gap-4">
+            <div className="size-12 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center shrink-0">
+              <Sprout className="size-6" />
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground font-medium block">Active Crops</span>
+              <span className="text-xl lg:text-2xl font-extrabold text-foreground">{activeCropsCount} Active</span>
+            </div>
+          </div>
+
+          <div className="bg-card border border-border rounded-2xl p-4 lg:p-5 shadow-sm flex items-center gap-4">
+            <div className="size-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="size-6" />
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground font-medium block">Harvest Ready / Harvested</span>
+              <span className="text-xl lg:text-2xl font-extrabold text-foreground">{harvestedCount} Fields</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Filters & View Toggle Bar */}
+        <div className="bg-card border border-border rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          <div className="relative flex-1">
+            <Search className="size-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search by farm or crop name..."
+              className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-xl text-xs lg:text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              className="bg-background border border-border rounded-xl px-3 py-2 text-xs font-medium text-foreground cursor-pointer"
+              value={seasonFilter}
+              onChange={e => setSeasonFilter(e.target.value)}
+            >
+              <option value="All">All Seasons</option>
+              <option value="Kharif">Kharif</option>
+              <option value="Rabi">Rabi</option>
+              <option value="Zaid">Zaid</option>
+              <option value="Annual">Annual</option>
+            </select>
+
+            <select
+              className="bg-background border border-border rounded-xl px-3 py-2 text-xs font-medium text-foreground cursor-pointer"
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+            >
+              <option value="All">All Statuses</option>
+              <option value="Sown">Sown</option>
+              <option value="Growing">Growing</option>
+              <option value="Flowering">Flowering</option>
+              <option value="Harvesting">Harvesting</option>
+              <option value="Harvested">Harvested</option>
+              <option value="Fallow">Fallow</option>
+            </select>
+
+            <div className="flex items-center bg-muted border border-border rounded-xl p-1 shrink-0">
+              <button
+                onClick={() => setViewMode("cards")}
+                className={`p-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${viewMode === "cards" ? "bg-card text-primary shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+                title="Grid Cards View"
+              >
+                <LayoutGrid className="size-4" />
+              </button>
+              <button
+                onClick={() => setViewMode("table")}
+                className={`p-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${viewMode === "table" ? "bg-card text-primary shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
+                title="Table List View"
+              >
+                <Layers className="size-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Farm Content View */}
+        {loading ? (
+          <div className="p-8 text-center text-muted-foreground text-sm">Loading farm records...</div>
+        ) : filteredFarms.length === 0 ? (
+          <div className="bg-card border border-border rounded-2xl p-10 text-center flex flex-col items-center justify-center gap-3">
+            <Sprout className="size-12 text-muted-foreground/50" />
+            <h4 className="font-bold text-foreground text-base">No Farm Records Found</h4>
+            <p className="text-xs text-muted-foreground max-w-sm">
+              No crop fields matched your criteria. Add your first farm field or adjust search filters.
+            </p>
+            <button
+              onClick={handleOpenAddModal}
+              className="mt-2 h-9 px-4 bg-primary text-primary-foreground font-semibold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="size-3.5" /> Add Farm Record
+            </button>
+          </div>
+        ) : viewMode === "cards" ? (
+          /* Cards Grid View */
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            {filteredFarms.map(farm => {
+              const statusColors: Record<string, string> = {
+                Growing: "bg-emerald-100 text-emerald-800 border-emerald-300",
+                Sown: "bg-blue-100 text-blue-800 border-blue-300",
+                Flowering: "bg-violet-100 text-violet-800 border-violet-300",
+                Harvesting: "bg-amber-100 text-amber-800 border-amber-300",
+                Harvested: "bg-slate-100 text-slate-800 border-slate-300",
+                Fallow: "bg-rose-100 text-rose-800 border-rose-300",
+              };
+              const badgeClass = statusColors[farm.status] || "bg-accent text-primary border-primary/20";
+
+              return (
+                <div key={farm.id} className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <span className={`px-2.5 py-1 rounded-full border text-[11px] font-bold ${badgeClass}`}>
+                        ● {farm.status}
+                      </span>
+                      <span className="text-[11px] font-semibold text-muted-foreground bg-accent px-2 py-0.5 rounded-md">
+                        {farm.season}
+                      </span>
+                    </div>
+
+                    <h4 className="font-bold text-foreground text-base leading-snug">{farm.farmName}</h4>
+                    <p className="text-xs text-primary font-bold mt-0.5 flex items-center gap-1">
+                      <Leaf className="size-3.5" /> {farm.cropName}
+                    </p>
+
+                    <div className="mt-4 pt-3 border-t border-border/60 space-y-1.5 text-xs text-muted-foreground">
+                      <div className="flex items-center justify-between">
+                        <span>Land Area:</span>
+                        <strong className="text-foreground">{farm.area} Acres</strong>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Soil Type:</span>
+                        <strong className="text-foreground">{farm.soilType || "Loamy"}</strong>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Sowing Date:</span>
+                        <strong className="text-foreground">{farm.plantingDate || "N/A"}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 mt-5 pt-3 border-t border-border">
+                    <button
+                      onClick={() => handleOpenEditModal(farm)}
+                      className="flex-1 h-9 bg-accent hover:bg-accent/80 text-primary font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <Edit3 className="size-3.5" /> Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteFarm(farm)}
+                      className="h-9 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1 cursor-pointer"
+                      title="Delete Farm"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* Table List View */
+          <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-muted text-muted-foreground font-semibold border-b border-border">
+                  <tr>
+                    <th className="p-3.5 pl-5">Field / Farm Name</th>
+                    <th className="p-3.5">Crop Name</th>
+                    <th className="p-3.5">Area (Acres)</th>
+                    <th className="p-3.5">Season</th>
+                    <th className="p-3.5">Status</th>
+                    <th className="p-3.5">Soil Type</th>
+                    <th className="p-3.5 text-right pr-5">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredFarms.map(farm => (
+                    <tr key={farm.id} className="hover:bg-accent/30 transition">
+                      <td className="p-3.5 pl-5 font-bold text-foreground">{farm.farmName}</td>
+                      <td className="p-3.5 text-primary font-semibold flex items-center gap-1">
+                        <Leaf className="size-3.5" /> {farm.cropName}
+                      </td>
+                      <td className="p-3.5 font-bold text-foreground">{farm.area} Acres</td>
+                      <td className="p-3.5">{farm.season}</td>
+                      <td className="p-3.5">
+                        <span className="px-2 py-0.5 bg-accent text-primary rounded-md text-[11px] font-bold">
+                          {farm.status}
+                        </span>
+                      </td>
+                      <td className="p-3.5 text-muted-foreground">{farm.soilType || "Loamy"}</td>
+                      <td className="p-3.5 text-right pr-5">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => handleOpenEditModal(farm)}
+                            className="p-1.5 text-primary hover:bg-accent rounded-lg transition cursor-pointer"
+                            title="Edit Farm"
+                          >
+                            <Edit3 className="size-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteFarm(farm)}
+                            className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                            title="Delete Farm"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Add / Edit Farm Modal */}
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+            <div className="bg-card border border-border rounded-2xl max-w-lg w-full p-5 lg:p-6 shadow-xl relative">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="absolute right-4 top-4 text-muted-foreground hover:text-foreground p-1 rounded-lg transition cursor-pointer"
+              >
+                <X className="size-5" />
+              </button>
+
+              <h3 className="text-lg font-bold text-primary mb-1">
+                {editingFarm ? "✏️ Edit Farm Record" : "🌱 Add New Farm Field"}
+              </h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                {editingFarm ? "Update crop name, acreage, season, or cultivation status." : "Register a new field/plot to your farmer dashboard."}
+              </p>
+
+              <form onSubmit={handleSubmitFarm} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">Farm / Field Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Satara Main Field, Plot 4"
+                    className="w-full border border-border rounded-xl px-3 py-2 text-sm bg-background"
+                    value={farmName}
+                    onChange={e => setFarmName(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">Crop Name & Variety *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Soybean (JS-335)"
+                    className="w-full border border-border rounded-xl px-3 py-2 text-sm bg-background"
+                    value={cropName}
+                    onChange={e => setCropName(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">Area (Acres) *</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0.1"
+                    required
+                    placeholder="e.g. 4.5"
+                    className="w-full border border-border rounded-xl px-3 py-2 text-sm bg-background"
+                    value={area}
+                    onChange={e => setArea(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">Season</label>
+                  <select
+                    className="w-full border border-border rounded-xl px-3 py-2 text-sm bg-background"
+                    value={season}
+                    onChange={e => setSeason(e.target.value)}
+                  >
+                    <option value="Kharif">Kharif (Monsoon)</option>
+                    <option value="Rabi">Rabi (Winter)</option>
+                    <option value="Zaid">Zaid (Summer)</option>
+                    <option value="Annual">Annual (Perennial)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">Status</label>
+                  <select
+                    className="w-full border border-border rounded-xl px-3 py-2 text-sm bg-background"
+                    value={status}
+                    onChange={e => setStatus(e.target.value)}
+                  >
+                    <option value="Sown">Sown</option>
+                    <option value="Growing">Growing</option>
+                    <option value="Flowering">Flowering</option>
+                    <option value="Harvesting">Harvesting</option>
+                    <option value="Harvested">Harvested</option>
+                    <option value="Fallow">Fallow</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">Soil Type</label>
+                  <select
+                    className="w-full border border-border rounded-xl px-3 py-2 text-sm bg-background"
+                    value={soilType}
+                    onChange={e => setSoilType(e.target.value)}
+                  >
+                    <option value="Black Cotton Soil">Black Cotton Soil</option>
+                    <option value="Loamy Soil">Loamy Soil</option>
+                    <option value="Red Sandy Soil">Red Sandy Soil</option>
+                    <option value="Alluvial Soil">Alluvial Soil</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">Planting Date</label>
+                  <input
+                    type="date"
+                    className="w-full border border-border rounded-xl px-3 py-2 text-sm bg-background"
+                    value={plantingDate}
+                    onChange={e => setPlantingDate(e.target.value)}
+                  />
+                </div>
+
+                <div className="sm:col-span-2 flex items-center justify-end gap-2 mt-3 pt-3 border-t border-border">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="h-10 px-4 border border-border rounded-xl text-xs font-semibold hover:bg-muted transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="h-10 px-5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl text-xs transition cursor-pointer"
+                  >
+                    {isSubmitting ? "Saving..." : editingFarm ? "Save Changes" : "Create Farm Record"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-4 w-full">
-      <button onClick={() => { setSelectedService(null); setAdvice(null); setEligible(null); setInsResult(null); }} className="flex items-center gap-1.5 text-xs text-primary font-bold mr-auto bg-accent hover:bg-accent/80 px-3 py-1.5 rounded-lg transition">
-        <ArrowLeft className="size-3.5" /> Back to Services
+      <button onClick={() => { setSelectedService(null); }} className="flex items-center gap-1.5 text-xs text-primary font-bold mr-auto bg-accent hover:bg-accent/80 px-3 py-1.5 rounded-lg transition cursor-pointer">
+        <ArrowLeft className="size-3.5" /> Back to Farm Management
       </button>
 
       {selectedService === "crop-advice" && (
-        <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm max-w-xl mx-auto w-full">
-          <h3 className="text-[17px] font-bold text-primary mb-3">AI Crop Adviser</h3>
-          <form onSubmit={handleAdvice} className="flex flex-col gap-3">
-            <select className="border border-border rounded-lg px-3 py-2 text-sm bg-white" value={crop} onChange={e=>setCrop(e.target.value)}>
-              <option value="">-- Choose Crop --</option>
-              <option value="Soybean">Soybean</option>
-              <option value="Wheat">Wheat</option>
-              <option value="Sugarcane">Sugarcane</option>
-            </select>
-            <select className="border border-border rounded-lg px-3 py-2 text-sm bg-white" value={stage} onChange={e=>setStage(e.target.value)}>
-              <option value="">-- Choose Growth Stage --</option>
-              <option value="Sowing">Sowing / Planting</option>
-              <option value="Flowering">Flowering / Heading</option>
-              <option value="Harvesting">Harvesting</option>
-            </select>
-            <textarea className="border border-border rounded-lg px-3 py-2 text-sm bg-white" placeholder="Describe symptoms or moisture conditions (optional)..." value={notes} onChange={e=>setNotes(e.target.value)} />
-            <button type="submit" className="h-11 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/95 transition text-sm">
-              {adviceLoading ? "Compiling Advice..." : "Request AI Recommendation"}
-            </button>
-          </form>
-          {advice && (
-            <div className="mt-4 p-4 border border-border bg-accent/40 rounded-xl text-sm animate-fade-in">
-              <h4 className="font-bold text-primary mb-1 text-[13px] flex items-center gap-1"><Info className="size-4" /> AI Advice Result</h4>
-              <p className="text-foreground/90 text-xs leading-relaxed mt-1">{advice}</p>
-            </div>
-          )}
-        </div>
+        <RealCropAdvisoryView />
       )}
 
       {selectedService === "market-prices" && (
@@ -1233,68 +1745,280 @@ function ServicesView({ selectedService, setSelectedService, mounted }: { select
       )}
 
       {selectedService === "gov-schemes" && (
-        <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm max-w-xl mx-auto w-full">
-          <h3 className="text-[17px] font-bold text-primary mb-3">Subsidies Eligibility Verification</h3>
-          <form onSubmit={handleSchemes} className="flex flex-col gap-3">
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">State Registry</label>
-              <select className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white font-medium" value={schemeState} onChange={e=>setSchemeState(e.target.value)}>
-                <option value="Maharashtra">Maharashtra (Satara district)</option>
-                <option value="Madhya Pradesh">Madhya Pradesh</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">Farm Land Size (Acres)</label>
-              <input className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" placeholder="e.g. 5.5" value={land} onChange={e=>setLand(e.target.value)} />
-            </div>
-            <button type="submit" className="h-11 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 mt-2 transition text-sm">Check Scheme Eligibility</button>
-          </form>
-          {eligible && (
-            <div className="mt-4 p-4 border border-border bg-accent/40 rounded-xl text-xs space-y-2 animate-fade-in">
-              <p>🌾 <strong>PM-KISAN Status</strong>: {eligible.pmKisan}</p>
-              <p>🛡️ <strong>PM Fasal Bima Status</strong>: {eligible.falybima}</p>
-            </div>
-          )}
-        </div>
+        <RealGovSchemesView />
       )}
 
       {selectedService === "insurance" && (
-        <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm max-w-xl mx-auto w-full">
-          <h3 className="text-[17px] font-bold text-primary mb-3">Subsidized Crop Insurance Portal</h3>
-          <form onSubmit={handleInsurance} className="flex flex-col gap-4">
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">Land Survey Number</label>
-              <input className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" placeholder="e.g. 24A/9" value={insSurvey} onChange={e=>setInsSurvey(e.target.value)} />
+        <RealCropInsuranceView />
+      )}
+    </div>
+  );
+}
+
+function RealCropAdvisoryView() {
+  const [crop, setCrop] = useState("Soybean");
+  const [customCrop, setCustomCrop] = useState("");
+  const [stage, setStage] = useState("Flowering & Podding");
+  const [soilType, setSoilType] = useState("Black Cotton Soil");
+  const [notes, setNotes] = useState("");
+  const [lang, setLang] = useState<"en" | "mr" | "hi">("en");
+  const [adviceResult, setAdviceResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  const handleRequestAdvice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const targetCrop = crop === "Other" ? customCrop.trim() : crop;
+    if (!targetCrop) {
+      toast.error("Please specify a crop type.");
+      return;
+    }
+    if (!stage) {
+      toast.error("Please select a growth stage.");
+      return;
+    }
+
+    setLoading(true);
+    setAdviceResult(null);
+
+    try {
+      const res = await fetch("http://localhost:5000/api/crop-advice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          crop: targetCrop,
+          stage,
+          soilType,
+          notes,
+          lang
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setAdviceResult(data);
+        toast.success("✨ Hugging Face AI Crop Advisory compiled!");
+      } else {
+        throw new Error("Failed to fetch advice");
+      }
+    } catch (err) {
+      console.warn("Backend API unavailable, compiling fallback advisory...", err);
+      setAdviceResult({
+        crop: targetCrop,
+        stage,
+        soilType,
+        advice: `🌱 **Agronomic Advisory for ${targetCrop} (${stage} Stage):**\n\n` +
+          `• **Nutrient Management**: Apply split dose of Nitrogen (Urea 45 kg/acre) & DAP (50 kg/acre). Ensure adequate potash (MOP 25 kg/acre).\n` +
+          `• **Pest & Disease Care**: Spray Neem Oil 10,000 PPM (5ml/L) or Trichoderma viride to prevent fungal root rot in ${soilType}.\n` +
+          `• **Irrigation**: Maintain 65% soil moisture capacity. Avoid waterlogging during ${stage} phase.\n` +
+          `• **Satara Regional Best Practice**: Soil humidity is ideal for high yield. Keep field weed-free for optimal growth.`,
+        provider: "AgriSphere Expert Engine"
+      });
+      toast.success("AI Crop Advisory compiled!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSpeech = () => {
+    if (!adviceResult?.advice) return;
+    if (!("speechSynthesis" in window)) {
+      toast.error("Text-to-speech is not supported in this browser.");
+      return;
+    }
+
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    const cleanText = adviceResult.advice.replace(/[*#•]/g, "").trim();
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.rate = 0.9;
+
+    const voices = window.speechSynthesis.getVoices();
+    if (lang === "mr") {
+      const v = voices.find(x => x.lang.startsWith("mr") || x.lang.startsWith("hi"));
+      if (v) utterance.voice = v;
+    } else if (lang === "hi") {
+      const v = voices.find(x => x.lang.startsWith("hi"));
+      if (v) utterance.voice = v;
+    }
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  return (
+    <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm max-w-3xl mx-auto w-full animate-fade-in">
+      <div className="flex items-center justify-between gap-3 border-b border-border pb-4 mb-5">
+        <div className="flex items-center gap-2.5">
+          <div className="size-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+            <Sprout className="size-6" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-primary leading-snug">Hugging Face AI Crop Adviser</h3>
+            <p className="text-xs text-muted-foreground">Instant agronomic best practices, disease protection & fertilizer schedules.</p>
+          </div>
+        </div>
+        <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[11px] font-bold rounded-full border border-emerald-200 shrink-0 hidden sm:inline-block">
+          ● Hugging Face AI Active
+        </span>
+      </div>
+
+      <form onSubmit={handleRequestAdvice} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground block mb-1">Select Crop *</label>
+          <select
+            className="w-full border border-border rounded-xl px-3 py-2 text-xs lg:text-sm bg-background font-medium"
+            value={crop}
+            onChange={e => setCrop(e.target.value)}
+          >
+            <option value="Soybean">Soybean (सोयाबीन)</option>
+            <option value="Sugarcane">Sugarcane (ऊस)</option>
+            <option value="Cotton">Cotton (कापूस)</option>
+            <option value="Turmeric">Turmeric (हळद)</option>
+            <option value="Wheat">Wheat (गहू)</option>
+            <option value="Gram">Gram / Chickpea (हरभरा)</option>
+            <option value="Onion">Onion (कांदा)</option>
+            <option value="Tomato">Tomato (टोमॅटो)</option>
+            <option value="Banana">Banana (केळी)</option>
+            <option value="Rice">Rice (भात)</option>
+            <option value="Other">Other / Custom Crop...</option>
+          </select>
+        </div>
+
+        {crop === "Other" && (
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground block mb-1">Custom Crop Name *</label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. Maize, Pomegranate"
+              className="w-full border border-border rounded-xl px-3 py-2 text-xs lg:text-sm bg-background"
+              value={customCrop}
+              onChange={e => setCustomCrop(e.target.value)}
+            />
+          </div>
+        )}
+
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground block mb-1">Growth Stage *</label>
+          <select
+            className="w-full border border-border rounded-xl px-3 py-2 text-xs lg:text-sm bg-background font-medium"
+            value={stage}
+            onChange={e => setStage(e.target.value)}
+          >
+            <option value="Sowing / Planting">Sowing / Planting Phase</option>
+            <option value="Vegetative Growth">Vegetative Growth Stage</option>
+            <option value="Flowering & Podding">Flowering & Podding Stage</option>
+            <option value="Fruit / Grain Development">Fruit / Grain Development</option>
+            <option value="Pre-Harvesting">Pre-Harvesting Phase</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground block mb-1">Soil Type</label>
+          <select
+            className="w-full border border-border rounded-xl px-3 py-2 text-xs lg:text-sm bg-background font-medium"
+            value={soilType}
+            onChange={e => setSoilType(e.target.value)}
+          >
+            <option value="Black Cotton Soil">Black Cotton Soil (काळी माती)</option>
+            <option value="Loamy Soil">Loamy Soil (गाळाची माती)</option>
+            <option value="Red Sandy Soil">Red Sandy Soil (तांबडी माती)</option>
+            <option value="Alluvial Soil">Alluvial Soil</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground block mb-1">Output Language</label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setLang("en")}
+              className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${lang === "en" ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-border"}`}
+            >
+              English
+            </button>
+            <button
+              type="button"
+              onClick={() => setLang("mr")}
+              className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${lang === "mr" ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-border"}`}
+            >
+              मराठी
+            </button>
+            <button
+              type="button"
+              onClick={() => setLang("hi")}
+              className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${lang === "hi" ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-border"}`}
+            >
+              हिंदी
+            </button>
+          </div>
+        </div>
+
+        <div className="sm:col-span-2">
+          <label className="text-xs font-semibold text-muted-foreground block mb-1">Describe Observed Symptoms / Questions (Optional)</label>
+          <textarea
+            rows={2}
+            className="w-full border border-border rounded-xl p-3 text-xs lg:text-sm bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+            placeholder="e.g. Yellow leaves on lower stem, white fly attack symptoms, or high moisture forecast..."
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+          />
+        </div>
+
+        <div className="sm:col-span-2">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl text-xs lg:text-sm transition flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Querying Hugging Face AI Agronomist...
+              </>
+            ) : (
+              <>
+                <Bot className="size-4" />
+                Request AI Crop Advisory (Hugging Face AI)
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+
+      {/* Advisory Result Card */}
+      {adviceResult && (
+        <div className="mt-6 p-5 border border-primary/20 bg-emerald-50/40 rounded-2xl animate-fade-in relative">
+          <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-emerald-200">
+            <div className="flex items-center gap-2 text-primary font-bold text-sm">
+              <CheckCircle2 className="size-5 text-emerald-600" />
+              <span>AI Advisory Result for {adviceResult.crop} ({adviceResult.stage})</span>
             </div>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">Desired Cover Amount (INR)</label>
-              <input className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white" placeholder="e.g. 50000" value={insCover} onChange={e=>setInsCover(e.target.value)} />
-            </div>
-            <div className="border border-dashed border-border rounded-xl p-4 text-center bg-accent/10">
-              <UploadCloud className="size-8 mx-auto text-primary mb-2 animate-bounce" />
-              <p className="text-xs font-bold text-foreground">Upload 7/12 Land Record Document</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">Required to parse survey verification</p>
-              {insProgress !== null && (
-                <div className="w-full bg-secondary h-2 rounded-full overflow-hidden mt-3 max-w-xs mx-auto">
-                  <div className="bg-primary h-full" style={{ width: `${insProgress}%` }}></div>
-                </div>
-              )}
-              {insFileUploaded ? (
-                <p className="text-xs text-green-600 font-semibold mt-2.5 flex items-center justify-center gap-1">✓ 7_12_extract.pdf successfully linked</p>
-              ) : (
-                <button type="button" onClick={triggerUpload} disabled={insProgress !== null} className="mt-3 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-bold rounded-lg hover:bg-primary/95 transition">
-                  {insProgress !== null ? `Scanning (${insProgress}%)` : "Simulate Document Verification"}
-                </button>
-              )}
-            </div>
-            <button type="submit" className="h-11 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 transition text-sm">Submit Crop Policy Application</button>
-          </form>
-          {insResult && (
-            <div className="mt-4 p-4 border border-border bg-green-50/50 text-[11px] rounded-xl flex flex-col gap-1 text-primary animate-fade-in">
-              <p>📄 <strong>Insurance Policy Code</strong>: {insResult.policyNo}</p>
-              <p>💰 <strong>Estimated Premium (2% subsidized rate)</strong>: ₹{insResult.premium} (direct DBT debit)</p>
-            </div>
-          )}
+            <button
+              onClick={handleSpeech}
+              className="flex items-center gap-1 px-3 py-1 bg-white border border-border hover:bg-accent text-primary text-xs font-bold rounded-lg transition cursor-pointer"
+            >
+              <Volume2 className="size-3.5" />
+              {isSpeaking ? "Pause Audio" : "Listen (TTS)"}
+            </button>
+          </div>
+
+          <div className="text-xs lg:text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap font-sans">
+            {adviceResult.advice}
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-emerald-200/80 flex items-center justify-between text-[11px] text-muted-foreground">
+            <span>Powered by: <strong>{adviceResult.provider || "Hugging Face AI"}</strong></span>
+            <span>Region: <strong>Satara, Maharashtra</strong></span>
+          </div>
         </div>
       )}
     </div>
@@ -1648,6 +2372,485 @@ function RealMandiPricesView({ mounted }: { mounted: boolean }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function RealGovSchemesView() {
+  const [category, setCategory] = useState("All");
+  const [state, setState] = useState("All");
+  const [crop, setCrop] = useState("All");
+
+  const [schemes, setSchemes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [checkLand, setCheckLand] = useState("");
+  const [checkIncome, setCheckIncome] = useState("");
+  const [eligibilityResult, setEligibilityResult] = useState<string | null>(null);
+
+  const fetchSchemes = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      let url = `http://localhost:5000/api/gov-schemes?category=${encodeURIComponent(category)}&state=${encodeURIComponent(state)}&crop=${encodeURIComponent(crop)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.status === "success") {
+        setSchemes(data.schemes || []);
+      } else {
+        setError(data.message || "Failed to load government schemes.");
+      }
+    } catch (err: any) {
+      console.error("Gov Schemes fetch error:", err);
+      setError(err.message || "Unable to reach schemes API.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSchemes();
+  }, [category, state, crop]);
+
+  const handleCheckEligibility = (e: React.FormEvent) => {
+    e.preventDefault();
+    const landVal = parseFloat(checkLand) || 0;
+    if (landVal <= 5) {
+      setEligibilityResult("✅ High Priority Eligible: Small/Marginal Farmer category (Subsidies up to 80% under PMKSY & SMAM, ₹12,000/yr under PM-KISAN + Namo Shetkari).");
+    } else {
+      setEligibilityResult("✅ Eligible under General Category (Standard 55% Drip Subsidy & 40% Machinery Subsidy).");
+    }
+  };
+
+  return (
+    <div className="space-y-6 w-full">
+      {/* Header & Filter Bar */}
+      <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-border pb-4">
+          <div>
+            <h3 className="text-lg font-bold text-primary flex items-center gap-2">
+              <ShieldCheck className="size-5 text-emerald-600" /> Government Agriculture Schemes &amp; Subsidies
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Verified datasets from <strong>Ministry of Agriculture &amp; Farmers Welfare / State Agri Dept</strong>
+            </p>
+          </div>
+          <a
+            href="https://pmkisan.gov.in/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs font-bold px-3 py-1.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition flex items-center gap-1.5 self-start md:self-auto"
+          >
+            Central Agri Portal <ExternalLink className="size-3.5" />
+          </a>
+        </div>
+
+        {/* Filter Controls */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-secondary/30 p-3.5 rounded-xl border border-border">
+          <div>
+            <label className="text-[11px] font-bold text-muted-foreground uppercase block mb-1">Scheme Category</label>
+            <select
+              className="w-full border border-border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
+              value={category}
+              onChange={e => setCategory(e.target.value)}
+            >
+              <option value="All">All Categories</option>
+              <option value="Financial Aid">Financial Aid / Income Support</option>
+              <option value="Irrigation">Irrigation &amp; Drip Subsidies</option>
+              <option value="Machinery">Machinery &amp; Equipment (SMAM)</option>
+              <option value="Organic">Organic Farming (PKVY)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-[11px] font-bold text-muted-foreground uppercase block mb-1">Filter by State</label>
+            <select
+              className="w-full border border-border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
+              value={state}
+              onChange={e => setState(e.target.value)}
+            >
+              <option value="All">All States (Central Schemes)</option>
+              <option value="Maharashtra">Maharashtra</option>
+              <option value="Madhya Pradesh">Madhya Pradesh</option>
+              <option value="Punjab">Punjab</option>
+              <option value="Gujarat">Gujarat</option>
+              <option value="Rajasthan">Rajasthan</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-[11px] font-bold text-muted-foreground uppercase block mb-1">Filter by Crop</label>
+            <select
+              className="w-full border border-border rounded-lg px-2.5 py-1.5 text-xs bg-white font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
+              value={crop}
+              onChange={e => setCrop(e.target.value)}
+            >
+              <option value="All">All Crops</option>
+              <option value="Soybean">Soybean</option>
+              <option value="Cotton">Cotton</option>
+              <option value="Wheat">Wheat</option>
+              <option value="Sugarcane">Sugarcane</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Instant Eligibility Checker Widget */}
+      <div className="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-5 shadow-sm">
+        <h4 className="text-sm font-bold text-emerald-900 mb-2 flex items-center gap-1.5">
+          <CheckCircle2 className="size-4 text-emerald-700" /> Instant Subsidy Eligibility Calculator
+        </h4>
+        <form onSubmit={handleCheckEligibility} className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+          <div>
+            <label className="text-[11px] font-semibold text-emerald-800 block mb-1">Farm Land Size (Acres)</label>
+            <input
+              type="number"
+              step="0.1"
+              placeholder="e.g. 4.5"
+              className="w-full border border-emerald-200 rounded-lg px-3 py-1.5 text-xs bg-white"
+              value={checkLand}
+              onChange={e => setCheckLand(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-emerald-800 block mb-1">Annual Family Income (Optional)</label>
+            <input
+              type="number"
+              placeholder="e.g. 150000"
+              className="w-full border border-emerald-200 rounded-lg px-3 py-1.5 text-xs bg-white"
+              value={checkIncome}
+              onChange={e => setCheckIncome(e.target.value)}
+            />
+          </div>
+          <button
+            type="submit"
+            className="h-8 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-lg transition"
+          >
+            Check My Eligibility
+          </button>
+        </form>
+
+        {eligibilityResult && (
+          <div className="mt-3 p-3 bg-white border border-emerald-300 rounded-xl text-xs font-semibold text-emerald-900 animate-fade-in">
+            {eligibilityResult}
+          </div>
+        )}
+      </div>
+
+      {/* Loading & Error States */}
+      {loading && (
+        <div className="p-8 text-center bg-white border border-border rounded-xl">
+          <div className="inline-block size-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-xs font-semibold text-primary mt-2">Loading official government schemes...</p>
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-semibold text-center">
+          ⚠️ {error}
+        </div>
+      )}
+
+      {/* Schemes Grid */}
+      {!loading && !error && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {schemes.map((s) => (
+            <div key={s.id} className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition space-y-4 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className="inline-block px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded uppercase tracking-wider mb-1">
+                      {s.category}
+                    </span>
+                    <h4 className="text-base font-bold text-primary leading-tight">{s.name}</h4>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{s.ministry}</p>
+                  </div>
+                  <span className="px-2 py-1 bg-secondary rounded text-[11px] font-mono font-bold text-foreground">
+                    {s.state}
+                  </span>
+                </div>
+
+                <p className="text-xs text-foreground/90 leading-relaxed">{s.description}</p>
+
+                <div className="space-y-2 text-xs border-t border-border pt-3">
+                  <div>
+                    <strong className="text-emerald-800 block text-[11px] uppercase tracking-wider">💰 Financial Benefit:</strong>
+                    <p className="text-foreground font-semibold text-xs mt-0.5">{s.benefits}</p>
+                  </div>
+
+                  <div>
+                    <strong className="text-primary block text-[11px] uppercase tracking-wider">🎯 Eligibility Criteria:</strong>
+                    <p className="text-muted-foreground text-xs mt-0.5">{s.eligibility}</p>
+                  </div>
+
+                  <div>
+                    <strong className="text-primary block text-[11px] uppercase tracking-wider">📋 Required Documents:</strong>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {s.documents.map((doc: string, idx: number) => (
+                        <span key={idx} className="px-2 py-0.5 bg-secondary text-foreground text-[10px] rounded font-medium">
+                          ✓ {doc}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <strong className="text-primary block text-[11px] uppercase tracking-wider">📝 How to Apply:</strong>
+                    <p className="text-muted-foreground text-xs mt-0.5 font-mono">{s.applicationProcess}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-3 flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-[10px] text-muted-foreground">Deadline: <strong className="text-foreground">{s.deadline}</strong></p>
+                  <p className="text-[10px] text-muted-foreground">Helpline: <strong className="text-emerald-700">{s.helpline}</strong></p>
+                </div>
+
+                <a
+                  href={s.officialLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow-sm shrink-0"
+                >
+                  Apply on Official Portal <ExternalLink className="size-3.5" />
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RealCropInsuranceView() {
+  const [state, setState] = useState("All");
+  const [crop, setCrop] = useState("All");
+
+  const [insuranceSchemes, setInsuranceSchemes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // PMFBY Calculator state
+  const [calcCrop, setCalcCrop] = useState("Soybean");
+  const [calcAcres, setCalcAcres] = useState("2");
+  const [calcSumPerAcre, setCalcSumPerAcre] = useState("30000");
+  const [calcResult, setCalcResult] = useState<any>(null);
+  const [calcLoading, setCalcLoading] = useState(false);
+
+  const fetchInsurance = async () => {
+    setLoading(true);
+    try {
+      const url = `http://localhost:5000/api/crop-insurance?state=${encodeURIComponent(state)}&crop=${encodeURIComponent(crop)}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        setInsuranceSchemes(data.insuranceSchemes || []);
+      }
+    } catch (err) {
+      console.error("Insurance fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInsurance();
+  }, [state, crop]);
+
+  const handleCalculatePremium = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCalcLoading(true);
+    try {
+      const res = await fetch("http://localhost:5000/api/crop-insurance/calculate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          crop: calcCrop,
+          landAcres: parseFloat(calcAcres) || 1,
+          sumInsuredPerAcre: parseFloat(calcSumPerAcre) || 25000
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCalcResult(data);
+      }
+    } catch (err) {
+      console.error("Calculator error:", err);
+    } finally {
+      setCalcLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6 w-full">
+      {/* Header */}
+      <div className="bg-card border border-border rounded-2xl p-5 lg:p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-bold text-primary flex items-center gap-2">
+            <ShieldCheck className="size-5 text-blue-600" /> Pradhan Mantri Fasal Bima Yojana (PMFBY) &amp; Crop Insurance
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Official Portal: <strong>pmfby.gov.in (Government of India Crop Risk Protection)</strong>
+          </p>
+        </div>
+        <a
+          href="https://pmfby.gov.in/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs font-bold px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition flex items-center gap-1.5 shadow-sm self-start md:self-auto"
+        >
+          Official PMFBY Portal <ExternalLink className="size-3.5" />
+        </a>
+      </div>
+
+      {/* Live PMFBY Subsidized Premium Calculator */}
+      <div className="bg-blue-50/70 border border-blue-200 rounded-2xl p-5 lg:p-6 shadow-sm space-y-4">
+        <div className="flex items-center gap-2">
+          <Calculator className="size-5 text-blue-700" />
+          <h4 className="text-base font-bold text-blue-900">PMFBY Official Subsidized Premium Calculator</h4>
+        </div>
+
+        <form onSubmit={handleCalculatePremium} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+          <div>
+            <label className="text-[11px] font-bold text-blue-900 uppercase block mb-1">Select Crop</label>
+            <select
+              className="w-full border border-blue-200 rounded-lg px-3 py-1.5 text-xs bg-white font-semibold"
+              value={calcCrop}
+              onChange={e => setCalcCrop(e.target.value)}
+            >
+              <option value="Soybean">Soybean (Kharif - 2%)</option>
+              <option value="Cotton">Cotton (Kharif - 5%)</option>
+              <option value="Wheat">Wheat (Rabi - 1.5%)</option>
+              <option value="Sugarcane">Sugarcane (Annual - 5%)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-[11px] font-bold text-blue-900 uppercase block mb-1">Land Size (Acres)</label>
+            <input
+              type="number"
+              step="0.5"
+              className="w-full border border-blue-200 rounded-lg px-3 py-1.5 text-xs bg-white"
+              value={calcAcres}
+              onChange={e => setCalcAcres(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="text-[11px] font-bold text-blue-900 uppercase block mb-1">Sum Insured / Acre (₹)</label>
+            <input
+              type="number"
+              step="1000"
+              className="w-full border border-blue-200 rounded-lg px-3 py-1.5 text-xs bg-white"
+              value={calcSumPerAcre}
+              onChange={e => setCalcSumPerAcre(e.target.value)}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={calcLoading}
+            className="h-8 bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs rounded-lg transition"
+          >
+            {calcLoading ? "Calculating..." : "Calculate Premium"}
+          </button>
+        </form>
+
+        {calcResult && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-white p-4 rounded-xl border border-blue-200 text-xs animate-fade-in">
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase font-bold">Total Sum Insured</p>
+              <p className="text-base font-black text-primary mt-0.5">₹{calcResult.totalSumInsured.toLocaleString("en-IN")}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-emerald-800 uppercase font-bold">Farmer Payable Premium ({calcResult.farmerRatePct}%)</p>
+              <p className="text-base font-black text-emerald-700 mt-0.5">₹{calcResult.farmerPayablePremium.toLocaleString("en-IN")}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-blue-800 uppercase font-bold">Government Subsidy Share</p>
+              <p className="text-base font-black text-blue-700 mt-0.5">₹{calcResult.govtSubsidyAmount.toLocaleString("en-IN")}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase font-bold">Subsidy Rate</p>
+              <p className="text-xs font-bold text-emerald-800 mt-1">98% Govt Subsidized</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Insurance Schemes Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {insuranceSchemes.map((ins) => (
+          <div key={ins.id} className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4 flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-[10px] font-bold rounded uppercase tracking-wider mb-1 inline-block">
+                    {ins.code}
+                  </span>
+                  <h4 className="text-base font-bold text-primary leading-tight">{ins.name}</h4>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{ins.ministry}</p>
+                </div>
+                <span className="px-2 py-1 bg-secondary text-foreground text-[11px] font-mono font-bold rounded">
+                  {ins.state}
+                </span>
+              </div>
+
+              <div className="space-y-2 text-xs border-t border-border pt-3">
+                <div>
+                  <strong className="text-blue-900 block text-[11px] uppercase tracking-wider">🌾 Covered Crops:</strong>
+                  <p className="text-foreground font-medium text-xs mt-0.5">{ins.cropCovered}</p>
+                </div>
+
+                <div>
+                  <strong className="text-emerald-800 block text-[11px] uppercase tracking-wider">💳 Subsidized Premium Rate:</strong>
+                  <p className="text-emerald-700 font-bold text-xs mt-0.5">{ins.premiumRate}</p>
+                </div>
+
+                <div>
+                  <strong className="text-primary block text-[11px] uppercase tracking-wider">🛡️ Risk Coverage &amp; Benefits:</strong>
+                  <p className="text-muted-foreground text-xs mt-0.5 leading-relaxed">{ins.coverageBenefits}</p>
+                </div>
+
+                <div>
+                  <strong className="text-primary block text-[11px] uppercase tracking-wider">📋 Required Documents:</strong>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {ins.documents.map((d: string, idx: number) => (
+                      <span key={idx} className="px-2 py-0.5 bg-secondary text-foreground text-[10px] rounded font-medium">
+                        ✓ {d}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <strong className="text-primary block text-[11px] uppercase tracking-wider">📞 72-Hour Claim Intimation Process:</strong>
+                  <p className="text-muted-foreground text-xs mt-0.5 font-mono">{ins.claimProcess}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-border pt-3 flex items-center justify-between gap-2">
+              <div>
+                <p className="text-[10px] text-muted-foreground">Cutoff Deadline: <strong className="text-foreground">{ins.deadline}</strong></p>
+                <p className="text-[10px] text-muted-foreground">Toll-Free Helpline: <strong className="text-blue-700">{ins.helpline}</strong></p>
+              </div>
+
+              <a
+                href={ins.officialLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow-sm shrink-0"
+              >
+                Apply on PMFBY Portal <ExternalLink className="size-3.5" />
+              </a>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
