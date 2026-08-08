@@ -480,38 +480,53 @@ function Index() {
 
                   {/* Info row */}
                   <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-5">
-                    {/* Weather */}
-                    <div className="rounded-2xl bg-card border border-border p-5 lg:p-6 shadow-sm">
-                      <div className="flex items-center gap-2 mb-4">
-                        <CloudSun className="size-5 text-primary" />
-                        <h3 className="text-base lg:text-lg font-semibold">{L.weather}</h3>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-5xl lg:text-6xl font-extrabold tracking-tight">
-                            28°C
+                    {/* Your Farm Profit */}
+                    <div className="rounded-2xl bg-card border border-border p-5 lg:p-6 shadow-sm flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <TrendingUp className="size-5 text-emerald-600" />
+                            <h3 className="text-base lg:text-lg font-bold text-foreground">Your Farm Profit</h3>
                           </div>
-                          <p className="text-muted-foreground mt-1 text-sm">{L.partly}</p>
+                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-extrabold rounded-full uppercase tracking-wider">
+                            94% Confidence
+                          </span>
                         </div>
-                        <div className="text-right border-l border-border pl-4">
-                          <span className="text-xs text-muted-foreground block font-medium">Tomorrow's Rain</span>
-                          <div className="flex items-center gap-1 justify-end mt-1 text-primary">
-                            <CloudRain className="size-4" />
-                            <span className="text-base font-bold">60%</span>
+
+                        <div className="flex items-baseline justify-between border-b border-border pb-3">
+                          <div>
+                            <span className="text-[11px] font-bold text-muted-foreground uppercase">Estimated Net Profit</span>
+                            <div className="text-3xl lg:text-4xl font-black text-emerald-600 tracking-tight mt-0.5">
+                              +₹1,24,600
+                            </div>
                           </div>
-                          <span className="text-[11px] text-muted-foreground block font-medium">Light Showers</span>
+                          <div className="text-right">
+                            <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                              +52.3% ROI
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                          <div className="p-2.5 bg-accent/40 rounded-xl border border-border">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase block">Estimated Revenue</span>
+                            <span className="text-sm font-bold text-primary mt-0.5 block">₹2,44,600</span>
+                            <span className="text-[9px] text-muted-foreground">50 Qtl × ₹4,892/Qtl</span>
+                          </div>
+                          <div className="p-2.5 bg-accent/40 rounded-xl border border-border">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase block">Total Farming Cost</span>
+                            <span className="text-sm font-bold text-amber-700 mt-0.5 block">₹1,20,000</span>
+                            <span className="text-[9px] text-muted-foreground">Seeds, Fertilizer, Labor</span>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="mt-5 grid grid-cols-3 gap-2 pt-4 border-t border-border">
-                        <Stat icon={Droplets} label={L.humidity} value="68%" />
-                        <Stat icon={Wind} label={L.wind} value="12 km/h" />
-                        <Stat icon={CloudRain} label={L.rain} value="20%" />
-                      </div>
-
-                      <div className="mt-4 flex items-center gap-2 text-sm text-primary bg-accent/60 rounded-lg px-3 py-2">
-                        <MapPin className="size-4" />
-                        Satara, Maharashtra
+                      <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs bg-accent/60 rounded-xl px-3.5 py-2">
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <IndianRupee className="size-3.5 text-primary" />
+                          <span className="font-medium text-[11px]">Break-even Price:</span>
+                        </div>
+                        <span className="font-extrabold text-primary text-xs">₹2,400 <span className="text-[10px] font-normal text-muted-foreground">/ Qtl</span></span>
                       </div>
                     </div>
 
