@@ -22,7 +22,7 @@ function generateAgriSphereFallback(userText = "") {
   const textLower = userText.toLowerCase();
   
   const isMarathi = /[\u0900-\u097F]/.test(userText) && 
-    (userText.includes("आहे") || userText.includes("नाही") || userText.includes("खत") || userText.includes("सोयाबीन") || userText.includes("कसे") || userText.includes("काय") || userText.includes("कोणते") || userText.includes("ऊस"));
+    (userText.includes("आहे") || userText.includes("नाही") || userText.includes("खत") || userText.includes("सोयाबीन") || userText.includes("कसे") || userText.includes("काय") || userText.includes("कोणते") || userText.includes("ऊस") || userText.includes("पाणी") || userText.includes("शेत"));
   const isHindi = /[\u0900-\u097F]/.test(userText);
 
   let lang = "English";
@@ -31,11 +31,13 @@ function generateAgriSphereFallback(userText = "") {
   if (isMarathi) {
     lang = "Marathi";
     if (textLower.includes("खत") || textLower.includes("सोयाबीन") || textLower.includes("माती")) {
-      answer = "सोयाबीन पिकासाठी पेरणीवेळी प्रति हेक्टरी ३० किलो नत्र, ६० किलो स्फुरद आणि ३० किलो पालाश द्यावे. सेंद्रिय खत व जिवाणू संवर्धनाचा वापर केल्यास पीक उत्पादन वाढते.";
-    } else if (textLower.includes("कीड") || textLower.includes("रोग") || textLower.includes("पिवळा")) {
-      answer = "सोयाबीनवरील पिवळा मोझॅक रोगाचे नियंत्रण करण्यासाठी पांढरी माशी नियंत्रित करा. त्यासाठी थायामेथॉक्सम २५% डब्ल्यूजी (४० ग्रॅम/एकरा) ची फवारणी करा.";
-    } else if (textLower.includes("पाणी") || textLower.includes("उसा") || textLower.includes("ऊस")) {
-      answer = "ऊस पिकासाठी ठिबक सिंचन पद्धत अत्यंत फायदेशीर आहे. उसाच्या जोमदार वाढीच्या काळात (६० ते १२० दिवस) खतांचा दुसरा हप्ता द्यावा.";
+      answer = "सोयाबीन पिकासाठी पेरणीवेळी प्रति हेक्टरी ३० किलो नत्र, ६० किलो स्फुरद आणि ३० किलो पालाश द्यावे. सेंद्रिय खत व जिवाणू संवर्धनाचा (राझोबियम + पीएसबी) वापर केल्यास पीक उत्पादन २५% पर्यंत वाढते.";
+    } else if (textLower.includes("कीड") || textLower.includes("रोग") || textLower.includes("पिवळा") || textLower.includes("अळी")) {
+      answer = "सोयाबीनवरील पिवळा मोझॅक रोगाचे नियंत्रण करण्यासाठी पांढरी माशी नियंत्रित करा. त्यासाठी थायामेथॉक्सम २५% डब्ल्यूजी (४० ग्रॅम/एकरा) किंवा ॲसिटामिप्रिड २०% एसपी ची फवारणी करा.";
+    } else if (textLower.includes("पाणी") || textLower.includes("उसा") || textLower.includes("ऊस") || textLower.includes("सिंचन")) {
+      answer = "ऊस पिकासाठी ठिबक सिंचन पद्धत अत्यंत फायदेशीर आहे. उसाच्या जोमदार वाढीच्या काळात (६० ते १२० दिवस) खतांचा दुसरा हप्ता देऊन पाणी व्यवस्थापन योग्य ठेवावे.";
+    } else if (textLower.includes("भाव") || textLower.includes("बाजार") || textLower.includes("मंडी")) {
+      answer = "सध्या लातूर व सातारा बाजार समितीत सोयाबीनचा सरासरी भाव ₹४,८९० ते ₹५,००० प्रति क्विंटल आहे. आवक व मागणीनुसार भावात तेजी राहण्याची शक्यता आहे.";
     } else {
       answer = "तुमच्या शेतीविषयक प्रश्नासाठी जमिनीचे आरोग्य कार्ड तपासून योग्य खत आणि पाण्याचे नियोजन करा. सुधारित बियाण्यांचा वापर केल्यास दर्जेदार उत्पादन मिळते.";
     }
@@ -47,24 +49,28 @@ function generateAgriSphereFallback(userText = "") {
       answer = "सोयाबीन में पीला मोज़ेक वायरस सफेद मक्खी द्वारा फैलता है। इसके नियंत्रण के लिए थायामेथॉक्सम 25% WG (40 ग्राम प्रति एकड़) का छिड़काव करें।";
     } else if (textLower.includes("गन्ना") || textLower.includes("सिंचाई") || textLower.includes("पानी")) {
       answer = "गन्ने की फसल में ड्रिप सिंचाई का उपयोग करें। नाइट्रोजन उर्वरक की खुराक को तीन भागों में बांटकर (बुवाई, 60 दिन और 120 दिन पर) दें।";
+    } else if (textLower.includes("भाव") || textLower.includes("मंडी") || textLower.includes("दाम")) {
+      answer = "वर्तमान में सोयाबीन का मंडी भाव ₹4,890 से ₹5,000 प्रति क्विंटल चल रहा है। उपज को सुखाकर और साफ करके मंडी में बेचने से बेहतर दाम मिलता है।";
     } else {
       answer = "आपकी कृषि संबंधी समस्या के लिए मृदा स्वास्थ्य कार्ड (Soil Health Card) के अनुसार संतुलित उर्वरक और सही सिंचाई का प्रयोग करें।";
     }
   } else {
     lang = "English";
-    if (textLower.includes("fertilizer") || textLower.includes("soybean") || textLower.includes("soil")) {
-      answer = "For soybean crops, apply 20 kg Nitrogen, 60 kg Phosphorus, and 40 kg Potash per hectare at sowing time. Combining with organic compost improves yield.";
-    } else if (textLower.includes("pests") || textLower.includes("disease") || textLower.includes("yellow")) {
-      answer = "Yellow Mosaic Virus in Soybean is transmitted by whiteflies. Control whiteflies by spraying Thiamethoxam 25% WG at 40g per acre promptly.";
+    if (textLower.includes("fertilizer") || textLower.includes("soybean") || textLower.includes("soil") || textLower.includes("yield")) {
+      answer = "For soybean crops, apply 20 kg Nitrogen, 60 kg Phosphorus, and 40 kg Potash per hectare at sowing time. Seed treatment with Rhizobium culture enhances nitrogen fixation and boosts yield.";
+    } else if (textLower.includes("pests") || textLower.includes("disease") || textLower.includes("yellow") || textLower.includes("insect")) {
+      answer = "Yellow Mosaic Virus in Soybean is transmitted by whiteflies. Control whiteflies promptly by spraying Thiamethoxam 25% WG (40g/acre) or Acetamiprid 20% SP (50g/acre).";
     } else if (textLower.includes("sugarcane") || textLower.includes("water") || textLower.includes("irrigation")) {
-      answer = "Drip irrigation is recommended for sugarcane. Split Nitrogen application into 3 doses at planting, 60 days, and 120 days of crop growth.";
+      answer = "Drip irrigation is recommended for sugarcane crops. Split Nitrogen fertilizer application into 3 equal doses at planting, 60 days, and 120 days of crop growth.";
+    } else if (textLower.includes("price") || textLower.includes("mandi") || textLower.includes("market")) {
+      answer = "Current AGMARKNET mandi modal prices for Soybean range between ₹4,850 and ₹5,050 per Quintal. Clean and moisture-controlled produce commands peak market rates.";
     } else {
-      answer = "For best crop health, check regional Soil Health recommendations, use certified seeds, and ensure proper field drainage during monsoons.";
+      answer = "For optimal crop performance, refer to regional Soil Health recommendations, use certified high-yield seeds, and maintain balanced N-P-K nutrient application.";
     }
   }
 
   return {
-    transcription: userText || (lang === "Marathi" ? "सोयाबीन पिकाचे खत नियोजन" : lang === "Hindi" ? "सोयाबीन खाद की मात्रा" : "Best fertilizer for soybean crop"),
+    transcription: userText,
     language: lang,
     answer: answer
   };
@@ -81,7 +87,14 @@ async function queryGeminiApi(prompt, systemInstruction = "", isJson = false) {
     return null;
   }
 
-  const models = ["gemini-1.5-flash", "gemini-2.5-flash", "gemini-pro"];
+  const models = [
+    "gemini-2.0-flash",
+    "gemini-2.5-flash",
+    "gemini-flash-latest",
+    "gemini-2.0-flash-lite",
+    "gemini-1.5-flash",
+    "gemini-pro"
+  ];
 
   for (const model of models) {
     try {
@@ -108,15 +121,19 @@ async function queryGeminiApi(prompt, systemInstruction = "", isJson = false) {
         const data = await res.json();
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
         if (text) {
-          console.log(`[Gemini API] Success using model '${model}'`);
+          console.log(`[Gemini API Success] Model '${model}' generated response.`);
           return text;
         }
       } else {
         const errText = await res.text().catch(() => "");
-        console.warn(`[Gemini API] Model '${model}' returned ${res.status}: ${errText.slice(0, 120)}`);
+        if (res.status === 429) {
+          console.warn(`[Gemini API Notice] Model '${model}' API Quota Exceeded (429). Trying next fallback.`);
+        } else {
+          console.warn(`[Gemini API] Model '${model}' returned ${res.status}: ${errText.slice(0, 120)}`);
+        }
       }
     } catch (err) {
-      console.warn(`[Gemini API] Exception with model '${model}':`, err.message);
+      console.warn(`[Gemini API Exception] Model '${model}':`, err.message);
     }
   }
 
