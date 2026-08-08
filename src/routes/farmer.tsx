@@ -38,8 +38,6 @@ import {
   RotateCcw,
   TrendingUp,
   ExternalLink,
-  ShieldCheck,
-  FileText,
   CheckCircle2,
   Calculator,
 } from "lucide-react";
