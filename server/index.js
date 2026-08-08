@@ -84,8 +84,7 @@ async function queryGeminiApi(prompt, systemInstruction = "", isJson = false) {
   const key = (process.env.GEMINI_API_KEY || "").trim();
 
   if (!key) {
-    console.warn("[Gemini API] No GEMINI_API_KEY found in process.env.");
-    return null;
+    throw new Error("GEMINI_API_KEY is missing in your .env file. Please set GEMINI_API_KEY in .env.");
   }
 
   const models = [
@@ -93,6 +92,8 @@ async function queryGeminiApi(prompt, systemInstruction = "", isJson = false) {
     "gemini-2.0-flash",
     "gemini-2.0-flash-lite"
   ];
+
+  let lastError = null;
 
   for (const model of models) {
     for (let attempt = 1; attempt <= 3; attempt++) {
@@ -125,26 +126,28 @@ async function queryGeminiApi(prompt, systemInstruction = "", isJson = false) {
           }
         } else {
           const errText = await res.text().catch(() => "");
+          lastError = `Model '${model}' HTTP ${res.status}: ${errText.slice(0, 150)}`;
           if (res.status === 503 && attempt < 3) {
             console.warn(`[Gemini API 503] High demand for '${model}'. Retrying attempt ${attempt + 1}...`);
             await new Promise(r => setTimeout(r, 600 * attempt));
             continue;
           } else if (res.status === 429) {
             console.warn(`[Gemini API Notice] Model '${model}' API Quota Exceeded (429).`);
-            break; // Try next model
+            break;
           } else {
-            console.warn(`[Gemini API] Model '${model}' returned ${res.status}: ${errText.slice(0, 120)}`);
+            console.warn(`[Gemini API Error] ${lastError}`);
             break;
           }
         }
       } catch (err) {
+        lastError = err.message;
         console.warn(`[Gemini API Exception] Model '${model}':`, err.message);
         break;
       }
     }
   }
 
-  return null;
+  throw new Error(lastError || "Failed to fetch response from Google Gemini API.");
 }
 
 /**
@@ -154,72 +157,74 @@ async function processVoiceWithGemini(audioBuffer, mimeType = "audio/webm", hist
   dotenv.config();
   const key = (process.env.GEMINI_API_KEY || "").trim();
 
-  if (key) {
-    const base64Audio = audioBuffer.toString("base64");
-    const cleanMimeType = (mimeType || "audio/webm").split(";")[0];
+  if (!key) {
+    throw new Error("GEMINI_API_KEY is missing in your .env file.");
+  }
 
-    const systemInstruction = 
-      "You are AgriSphere AI, an agricultural assistant for farmers.\n" +
-      "Listen carefully to the user's spoken audio message in English, Hindi, or Marathi.\n" +
-      "1. Transcribe the user's exact question in their original language. Do NOT translate.\n" +
-      "2. Detect the language as 'English', 'Hindi', or 'Marathi'.\n" +
-      "3. Provide clear, practical, farmer-friendly agricultural advice in the EXACT SAME language.\n\n" +
-      "Respond ONLY with a valid JSON object matching:\n" +
-      "{\n" +
-      '  "transcription": "<exact text spoken by farmer>",\n' +
-      '  "language": "English | Hindi | Marathi",\n' +
-      '  "answer": "<farmer-friendly advice in same language>"\n' +
-      "}";
+  const base64Audio = audioBuffer.toString("base64");
+  const cleanMimeType = (mimeType || "audio/webm").split(";")[0];
 
-    const models = ["gemini-flash-latest", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
+  const systemInstruction = 
+    "You are AgriSphere AI, an agricultural assistant for farmers.\n" +
+    "Listen carefully to the user's spoken audio message in English, Hindi, or Marathi.\n" +
+    "1. Transcribe the user's exact question in their original language. Do NOT translate.\n" +
+    "2. Detect the language as 'English', 'Hindi', or 'Marathi'.\n" +
+    "3. Provide clear, practical, farmer-friendly agricultural advice in the EXACT SAME language.\n\n" +
+    "Respond ONLY with a valid JSON object matching:\n" +
+    "{\n" +
+    '  "transcription": "<exact text spoken by farmer>",\n' +
+    '  "language": "English | Hindi | Marathi",\n' +
+    '  "answer": "<farmer-friendly advice in same language>"\n' +
+    "}";
 
-    for (const model of models) {
-      try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
-        const payload = {
-          system_instruction: { parts: [{ text: systemInstruction }] },
-          contents: [
-            {
-              role: "user",
-              parts: [
-                { inline_data: { mime_type: cleanMimeType, data: base64Audio } },
-                { text: "Transcribe farmer query, detect language (English/Hindi/Marathi), and answer in same language. JSON only." }
-              ]
-            }
-          ],
-          generationConfig: { responseMimeType: "application/json" }
-        };
+  const models = ["gemini-flash-latest", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
 
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
+  for (const model of models) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+      const payload = {
+        system_instruction: { parts: [{ text: systemInstruction }] },
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { inline_data: { mime_type: cleanMimeType, data: base64Audio } },
+              { text: "Transcribe farmer query, detect language (English/Hindi/Marathi), and answer in same language. JSON only." }
+            ]
+          }
+        ],
+        generationConfig: { responseMimeType: "application/json" }
+      };
 
-        if (res.ok) {
-          const data = await res.json();
-          const rawText = data.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("").trim();
-          if (rawText) {
-            try {
-              const parsed = JSON.parse(rawText);
-              console.log(`[Gemini Voice Success] Model '${model}' processed audio.`);
-              return {
-                transcription: parsed.transcription || "Farmer voice query",
-                language: parsed.language || "English",
-                answer: parsed.answer || "Thank you for your question."
-              };
-            } catch {
-              return { transcription: "Farmer voice query", language: "English", answer: rawText };
-            }
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const rawText = data.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("").trim();
+        if (rawText) {
+          try {
+            const parsed = JSON.parse(rawText);
+            console.log(`[Gemini Voice Success] Model '${model}' processed audio.`);
+            return {
+              transcription: parsed.transcription || "Farmer voice query",
+              language: parsed.language || "English",
+              answer: parsed.answer || "Thank you for your question."
+            };
+          } catch {
+            return { transcription: "Farmer voice query", language: "English", answer: rawText };
           }
         }
-      } catch (err) {
-        console.warn(`[Voice AI] Gemini Multimodal error with model '${model}':`, err.message);
       }
+    } catch (err) {
+      console.warn(`[Voice AI] Gemini Multimodal error with model '${model}':`, err.message);
     }
   }
 
-  return generateAgriSphereFallback("सोयाबीन पिकाचे खत नियोजन");
+  throw new Error("Voice processing failed on Google Gemini API.");
 }
 
 /**
@@ -231,30 +236,17 @@ async function processTextQuery(userText) {
   const userLang = isMarathi ? "Marathi" : isHindi ? "Hindi" : "English";
 
   const sysInstruction = 
-    "You are AgriSphere AI, an agricultural assistant for farmers.\n" +
+    "You are AgriSphere AI, an expert agricultural assistant for Indian farmers.\n" +
     "The user communicates in English, Hindi, or Marathi.\n" +
     "Always answer in the SAME language as the user's question.\n" +
-    "IMPORTANT FORMATTING RULES:\n" +
-    "- Do NOT use raw markdown headers like ###, ##, or horizontal lines like ---.\n" +
-    "- Do NOT use excessive raw asterisks or clutter.\n" +
-    "- Use clean paragraphs, clear titles, and neat numbered points (1., 2., 3.) or bullet points (- point).\n" +
-    "- Give practical, concise, farmer-friendly agricultural advice that is easy to read on mobile screens.";
+    "Give detailed, practical, crop-specific, farmer-friendly advice.";
 
   const geminiResult = await queryGeminiApi(userText, sysInstruction);
 
-  if (geminiResult) {
-    return {
-      transcription: userText,
-      language: userLang,
-      answer: geminiResult
-    };
-  }
-
-  const fb = generateAgriSphereFallback(userText);
   return {
     transcription: userText,
-    language: fb.language,
-    answer: fb.answer
+    language: userLang,
+    answer: geminiResult
   };
 }
 
@@ -334,7 +326,7 @@ app.post("/api/voice-ai", upload.single("file"), async (req, res) => {
     });
   } catch (err) {
     console.error("[Voice AI Error]:", err);
-    return res.json(generateAgriSphereFallback("सोयाबीन पिकाचे खत नियोजन"));
+    return res.status(500).json({ status: "error", message: err.message || "Voice processing failed on Gemini API." });
   }
 });
 
@@ -357,14 +349,24 @@ app.post("/api/chat", async (req, res) => {
   try {
     const { text } = req.body || {};
     if (!text || !text.trim()) {
-      return res.status(400).json({ detail: "Text field cannot be empty." });
+      return res.status(400).json({ status: "error", message: "Text field cannot be empty." });
+    }
+
+    dotenv.config();
+    const apiKey = (process.env.GEMINI_API_KEY || "").trim();
+
+    if (!apiKey) {
+      return res.status(400).json({
+        status: "error",
+        message: "Gemini API key is not configured. Please set GEMINI_API_KEY in your .env file."
+      });
     }
 
     const queryKey = text.trim().toLowerCase();
     const cacheKey = `chat:${queryKey}`;
     const cached = await getCache(cacheKey);
 
-    if (cached) {
+    if (cached && cached.status === "success" && cached.answer) {
       return res.json(cached);
     }
 
@@ -381,8 +383,10 @@ app.post("/api/chat", async (req, res) => {
     return res.json(responsePayload);
   } catch (err) {
     console.error("[Chat Error]:", err);
-    const fb = generateAgriSphereFallback(req.body?.text || "");
-    return res.json({ status: "success", transcription: req.body?.text || "", language: fb.language, answer: fb.answer });
+    return res.status(500).json({
+      status: "error",
+      message: err.message || "An unexpected error occurred while communicating with Gemini API."
+    });
   }
 });
 

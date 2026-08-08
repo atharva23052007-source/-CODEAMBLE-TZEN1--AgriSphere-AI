@@ -931,50 +931,6 @@ function DocumentsView() {
   );
 }
 
-function formatAiMessage(text: string) {
-  if (!text) return null;
-
-  let cleaned = text
-    .replace(/^###\s*/gm, "")
-    .replace(/^##\s*/gm, "")
-    .replace(/^#\s*/gm, "")
-    .replace(/---\s*/g, "")
-    .replace(/\*\*\*/g, "");
-
-  const lines = cleaned.split("\n");
-
-  return (
-    <div className="space-y-1.5">
-      {lines.map((line, idx) => {
-        const trimmed = line.trim();
-        if (!trimmed) return <div key={idx} className="h-1" />;
-
-        const isBullet = trimmed.startsWith("* ") || trimmed.startsWith("- ") || /^\d+\.\s/.test(trimmed);
-        const lineContent = trimmed.replace(/^[\*\-]\s*/, "");
-
-        const parts = lineContent.split(/(\*\*.*?\*\*)/g);
-        const formattedLine = parts.map((part, pIdx) => {
-          if (part.startsWith("**") && part.endsWith("**")) {
-            return <strong key={pIdx} className="font-bold text-foreground">{part.slice(2, -2)}</strong>;
-          }
-          return part;
-        });
-
-        if (isBullet) {
-          return (
-            <div key={idx} className="flex items-start gap-1.5 pl-1 my-0.5">
-              <span className="inline-block size-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-              <span>{formattedLine}</span>
-            </div>
-          );
-        }
-
-        return <p key={idx} className="leading-relaxed">{formattedLine}</p>;
-      })}
-    </div>
-  );
-}
-
 function AiAssistantView({ 
   lang,
   triggerVoiceInit,
@@ -991,25 +947,10 @@ function AiAssistantView({
   const [recording, setRecording] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const getMockReply = (q: string) => {
-    const qLower = q.toLowerCase();
-    if (qLower.includes("soybean") || qLower.includes("yellow") || qLower.includes("mosaic")) {
-      return "Yellow Mosaic Virus in Soybean is spread by whiteflies. Control them by spraying Thiamethoxam 25% WG (40g/acre) or Acetamiprid 20% SP (50g/acre). Uproot infected plants immediately.";
-    }
-    if (qLower.includes("fertilizer") || qLower.includes("sugarcane") || qLower.includes("nitrogen")) {
-      return "For sugarcane, apply 250 kg Nitrogen, 115 kg Phosphorus, and 115 kg Potassium per hectare. Split Nitrogen into 3 doses: planting, 60 days, and 120 days of growth.";
-    }
-    if (qLower.includes("water") || qLower.includes("irrigation") || qLower.includes("drip")) {
-      return "Drip irrigation is recommended in Maharashtra. Ensure watering during Soybean flowering (35-40 days) and pod development (65-70 days) to maximize seed yield.";
-    }
-    return "That's an important crop query. I suggest checking your regional Soil Health Card for N-P-K deficiency, and applying organic manure before sowing.";
-  };
-
   const speakText = (txt: string) => {
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
-      const cleanTxt = txt.replace(/[\#\*\_\-\~]/g, " ").replace(/\s+/g, " ").trim();
-      const utterance = new SpeechSynthesisUtterance(cleanTxt);
+      const utterance = new SpeechSynthesisUtterance(txt);
       utterance.lang = lang === "mr" ? "mr-IN" : lang === "hi" ? "hi-IN" : "en-IN";
       window.speechSynthesis.speak(utterance);
     }
@@ -1029,20 +970,20 @@ function AiAssistantView({
         body: JSON.stringify({ text: userMsg })
       });
 
-      if (resp.ok) {
-        const data = await resp.json();
-        const aiAnswer = data.answer || getMockReply(userMsg);
-        setMessages(prev => [...prev, { role: "ai", text: aiAnswer }]);
-        speakText(aiAnswer);
+      const data = await resp.json().catch(() => ({}));
+
+      if (resp.ok && data.status === "success" && data.answer) {
+        setMessages(prev => [...prev, { role: "ai", text: data.answer }]);
+        speakText(data.answer);
       } else {
-        const aiAnswer = getMockReply(userMsg);
-        setMessages(prev => [...prev, { role: "ai", text: aiAnswer }]);
-        speakText(aiAnswer);
+        const errorMsg = data.message || `Backend API error (${resp.status}). Please check your GEMINI_API_KEY in .env file.`;
+        setMessages(prev => [...prev, { role: "ai", text: `⚠️ ${errorMsg}` }]);
+        toast.error(errorMsg);
       }
-    } catch (err) {
-      const aiAnswer = getMockReply(userMsg);
-      setMessages(prev => [...prev, { role: "ai", text: aiAnswer }]);
-      speakText(aiAnswer);
+    } catch (err: any) {
+      const errorMsg = "Unable to connect to AI server at http://localhost:5000. Ensure the Node backend is running.";
+      setMessages(prev => [...prev, { role: "ai", text: `⚠️ ${errorMsg}` }]);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -1132,7 +1073,7 @@ function AiAssistantView({
         {messages.map((m, idx) => (
           <div key={idx} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${m.role === "user" ? "bg-primary text-primary-foreground rounded-tr-none" : "bg-secondary text-foreground rounded-tl-none font-medium"}`}>
-              {m.role === "ai" ? formatAiMessage(m.text) : m.text}
+              {m.text}
             </div>
           </div>
         ))}
