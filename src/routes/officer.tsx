@@ -14,6 +14,7 @@ import {
   Clock,
   Search,
   Check,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "../components/ui/sonner";
@@ -282,17 +283,17 @@ function OfficerDashboard() {
                                 <div className="flex items-center justify-end gap-1.5">
                                   <button
                                     onClick={() => handleApprove(a.id, a.name)}
-                                    className="size-7 flex items-center justify-center text-white bg-primary rounded-lg hover:bg-primary/95 transition shadow-sm"
-                                    title="Approve & Disburse"
+                                    className="size-7 rounded-full flex items-center justify-center text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-sm cursor-pointer"
+                                    title="Approve Sub-grant Appraisal"
                                   >
-                                    <Check className="size-4" />
+                                    <Check className="size-4" strokeWidth={2.5} />
                                   </button>
                                   <button
                                     onClick={() => handleReject(a.id, a.name)}
-                                    className="size-7 flex items-center justify-center text-white bg-red-650 rounded-lg hover:bg-red-750 transition shadow-sm"
-                                    title="Reject / Return"
+                                    className="size-7 rounded-full flex items-center justify-center text-white bg-rose-600 hover:bg-rose-700 transition shadow-sm cursor-pointer"
+                                    title="Reject Sub-grant Appraisal"
                                   >
-                                    <XCircle className="size-4" />
+                                    <X className="size-4" strokeWidth={2.5} />
                                   </button>
                                 </div>
                               ) : (
