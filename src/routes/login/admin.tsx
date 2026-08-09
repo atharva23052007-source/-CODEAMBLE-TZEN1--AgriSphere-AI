@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { Toaster } from "../../components/ui/sonner";
 import logoImg from "@/assets/logo.png";
 
+import { API_BASE_URL } from "@/config/api";
+
 export const Route = createFileRoute("/login/admin")({
   component: SuperAdminLogin,
 });
@@ -40,7 +42,7 @@ function SuperAdminLogin() {
     try {
       let resData: { token: string; user: any };
       try {
-        const apiRes = await fetch("http://localhost:5000/api/auth/login", {
+        const apiRes = await fetch(`${API_BASE_URL}/api/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: cleanEmail, password, role: "super_admin" })

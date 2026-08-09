@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { Toaster } from "../../components/ui/sonner";
 import logoImg from "@/assets/logo.png";
 
+import { API_BASE_URL } from "@/config/api";
+
 export const Route = createFileRoute("/login/officer")({
   component: OfficerLogin,
 });
@@ -51,7 +53,7 @@ function OfficerLogin() {
 
     try {
       let resData: { token: string; user: any };
-      const endpoint = isRegister ? "http://localhost:5000/api/auth/register" : "http://localhost:5000/api/auth/login";
+      const endpoint = isRegister ? `${API_BASE_URL}/api/auth/register` : `${API_BASE_URL}/api/auth/login`;
       const payload = isRegister 
         ? { name, email: cleanEmail, password, role: "officer" }
         : { email: cleanEmail, password, role: "officer" };
