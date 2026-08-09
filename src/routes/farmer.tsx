@@ -985,20 +985,41 @@ function DocumentsView() {
   const [progress, setProgress] = useState<number | null>(null);
   const [previewDoc, setPreviewDoc] = useState<any>(null);
 
+  // Auto-deduplicate docs list by document name
+  const uniqueDocs = docs.filter((doc, index, self) =>
+    index === self.findIndex(d => d.name.toLowerCase().trim() === doc.name.toLowerCase().trim())
+  );
+
   const handleUpload = (e: any) => {
     e.preventDefault();
-    if (!name.trim()) {
+    if (progress !== null) return;
+
+    const cleanName = name.trim();
+    if (!cleanName) {
       toast.error("Please enter a valid document name");
       return;
     }
+
+    // Check for duplicate document names
+    const isDuplicate = docs.some(d => d.name.toLowerCase().trim() === cleanName.toLowerCase());
+    if (isDuplicate) {
+      toast.error(`A document named "${cleanName}" already exists in your locker. Duplicate entries are not allowed!`);
+      return;
+    }
+
     setProgress(0);
     const interval = setInterval(() => {
       setProgress(p => {
         if (p === null) return null;
         if (p >= 100) {
           clearInterval(interval);
-          setDocs(d => [...d, { id: Date.now().toString(), name: name.trim(), type, size: "120 KB", date: "Today" }]);
-          toast.success("Document uploaded successfully to Secure AgriSphere Locker!");
+          setDocs(d => {
+            if (d.some(doc => doc.name.toLowerCase().trim() === cleanName.toLowerCase())) {
+              return d; // Guard against rapid duplicate additions
+            }
+            return [...d, { id: Date.now().toString(), name: cleanName, type, size: "120 KB", date: "Today" }];
+          });
+          toast.success(`Document "${cleanName}" uploaded successfully to Secure AgriSphere Locker!`);
           setName("");
           return null;
         }
@@ -1015,7 +1036,7 @@ function DocumentsView() {
           <h3 className="text-base lg:text-lg font-bold text-primary">Your Documents Locker</h3>
         </div>
         <div className="flex flex-col gap-3">
-          {docs.map(doc => (
+          {uniqueDocs.map(doc => (
             <div key={doc.id} className="flex justify-between items-center p-3 border border-border bg-accent/20 rounded-xl flex-wrap sm:flex-nowrap gap-3">
               <div>
                 <p className="font-semibold text-sm text-foreground">{doc.name}</p>
