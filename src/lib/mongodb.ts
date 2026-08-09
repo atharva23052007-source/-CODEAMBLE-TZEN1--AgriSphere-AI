@@ -8,7 +8,7 @@ import dns from "dns";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
-import type { Listing, Contract, LedgerEntry, ContractStatus } from "./mockTraderDB";
+import { parseAmount, type Listing, type Contract, type LedgerEntry, type ContractStatus } from "./mockTraderDB";
 
 // Fix Node.js SRV resolution on Windows by specifying DNS servers
 try {
@@ -540,12 +540,11 @@ export async function storeBuyListing(listingId: string, traderId: string) {
     throw new Error("A procurement contract already exists for this listing!");
   }
 
-  const numericPrice = parseInt(listing.price.replace(/\D/g, ""));
-  const calculatedAmount = Math.floor(numericPrice * 10 * 0.8);
+  const calculatedAmount = parseAmount(listing.qty, listing.price);
 
   const currentBal = stateNow.balances[traderId] || 0;
   if (currentBal < calculatedAmount) {
-    throw new Error("Insufficient funds in general deposit vault!");
+    throw new Error(`Insufficient funds in general deposit vault! Required: ₹${calculatedAmount.toLocaleString()}, Available: ₹${currentBal.toLocaleString()}`);
   }
 
   const date = new Date().toISOString().substring(0, 10);

@@ -526,6 +526,47 @@ app.post("/api/crop-advice", async (req, res) => {
 });
 
 /**
+ * Hugging Face AI Multilingual UI Translator Endpoint
+ */
+app.post("/api/translate", async (req, res) => {
+  try {
+    const { text, targetLang = "mr" } = req.body || {};
+    if (!text) {
+      return res.status(400).json({ status: "error", message: "Text is required for translation." });
+    }
+
+    const targetLangName = targetLang === "mr" ? "Marathi" : targetLang === "hi" ? "Hindi" : "English";
+
+    if (targetLang === "en") {
+      return res.json({ status: "success", translatedText: text, targetLang });
+    }
+
+    const systemInstruction = 
+      `You are AgriSphere AI Translation Engine. Translate agricultural & website UI text accurately into ${targetLangName}. ` +
+      `Do NOT add notes or preamble. Return ONLY the direct accurate ${targetLangName} translation.`;
+
+    const prompt = `Translate the following text into ${targetLangName}:\n"${text}"`;
+
+    let translated = await queryHuggingFaceApi(prompt, systemInstruction);
+
+    if (!translated) {
+      translated = await callGeminiTextApi(prompt, systemInstruction);
+    }
+
+    return res.json({
+      status: "success",
+      originalText: text,
+      translatedText: (translated || text).replace(/^["']|["']$/g, "").trim(),
+      targetLang,
+      provider: "Hugging Face AI"
+    });
+  } catch (err) {
+    console.error("[Translation Error]:", err);
+    return res.status(500).json({ status: "error", message: err.message || "Translation failed." });
+  }
+});
+
+/**
  * Real Data.gov.in AGMARKNET Mandi Commodity Prices Proxy API with Redis Caching
  */
 app.get("/api/mandi-prices", async (req, res) => {
