@@ -21,7 +21,7 @@ import { toast } from "sonner";
 import { Toaster } from "../components/ui/sonner";
 import logoImg from "@/assets/logo.png";
 import { useTraderDB } from "../hooks/useTraderDB";
-import type { ContractStatus } from "../lib/mockTraderDB";
+import { parseAmount, type ContractStatus } from "../lib/mockTraderDB";
 
 export const Route = createFileRoute("/buyer")({
   component: BuyerDashboard,
@@ -903,32 +903,56 @@ function BuyerDashboard() {
               </div>
 
               {/* Listing Details Card */}
-              <div className="rounded-2xl border border-border bg-secondary/40 p-4 space-y-2.5 text-xs">
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground font-semibold">Listing ID</span>
-                  <span className="font-mono font-bold text-foreground">{confirmModal.id}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground font-semibold">Crop / Produce</span>
-                  <span className="font-bold text-foreground">{confirmModal.crop}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground font-semibold">Cooperative (FPO)</span>
-                  <span className="font-semibold text-foreground">{confirmModal.fpo}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground font-semibold">Quantity</span>
-                  <span className="font-bold text-foreground">{confirmModal.qty}</span>
-                </div>
-                <div className="flex justify-between items-center border-t border-border pt-2.5">
-                  <span className="text-muted-foreground font-semibold">Expected Price</span>
-                  <span className="font-extrabold text-primary text-sm">{confirmModal.price}</span>
-                </div>
-                <div className="flex justify-between items-start">
-                  <span className="text-muted-foreground font-semibold">Quality Cert</span>
-                  <span className="text-right font-semibold text-green-700 max-w-[55%]">{confirmModal.cert}</span>
-                </div>
-              </div>
+              {(() => {
+                const totalReq = parseAmount(confirmModal.qty, confirmModal.price);
+                const hasSufficient = traderBalance >= totalReq;
+                return (
+                  <div className="rounded-2xl border border-border bg-secondary/40 p-4 space-y-2.5 text-xs">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground font-semibold">Listing ID</span>
+                      <span className="font-mono font-bold text-foreground">{confirmModal.id}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground font-semibold">Crop / Produce</span>
+                      <span className="font-bold text-foreground">{confirmModal.crop}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground font-semibold">Cooperative (FPO)</span>
+                      <span className="font-semibold text-foreground">{confirmModal.fpo}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground font-semibold">Quantity</span>
+                      <span className="font-bold text-foreground">{confirmModal.qty}</span>
+                    </div>
+                    <div className="flex justify-between items-center border-t border-border/60 pt-2">
+                      <span className="text-muted-foreground font-semibold">Unit Price</span>
+                      <span className="font-extrabold text-foreground">{confirmModal.price}</span>
+                    </div>
+                    
+                    {/* Calculated Escrow Lock Breakdown */}
+                    <div className="flex justify-between items-center bg-accent/80 p-2.5 rounded-xl border border-primary/20 mt-1">
+                      <span className="font-bold text-primary">Required Escrow Lock</span>
+                      <span className="font-black text-primary text-sm">₹{totalReq.toLocaleString()}</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center text-[11px] pt-1">
+                      <span className="text-muted-foreground">General Trading Wallet</span>
+                      <span className="font-bold text-foreground">₹{traderBalance.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[11px]">
+                      <span className="text-muted-foreground">Remaining After Lock</span>
+                      <span className={`font-bold ${hasSufficient ? "text-emerald-700" : "text-destructive"}`}>
+                        ₹{(traderBalance - totalReq).toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-start pt-1 border-t border-border/60">
+                      <span className="text-muted-foreground font-semibold">Quality Cert</span>
+                      <span className="text-right font-semibold text-green-700 max-w-[55%]">{confirmModal.cert}</span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Warning note */}
               <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
