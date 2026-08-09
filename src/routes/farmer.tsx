@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
+import { API_BASE_URL } from "@/config/api";
 import {
   Home,
   LayoutGrid,
@@ -1136,7 +1137,7 @@ function AiAssistantView({
     setLoading(true);
 
     try {
-      const resp = await fetch("http://localhost:5000/api/chat", {
+      const resp = await fetch(`${API_BASE_URL}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: userMsg })
@@ -1148,12 +1149,12 @@ function AiAssistantView({
         setMessages(prev => [...prev, { role: "ai", text: data.answer }]);
         speakText(data.answer);
       } else {
-        const errorMsg = data.message || `Backend API error (${resp.status}). Please check your GEMINI_API_KEY in .env file.`;
+        const errorMsg = data.message || `Backend API error (${resp.status}). Please check server configuration.`;
         setMessages(prev => [...prev, { role: "ai", text: `⚠️ ${errorMsg}` }]);
         toast.error(errorMsg);
       }
     } catch (err: any) {
-      const errorMsg = "Unable to connect to AI server at http://localhost:5000. Ensure the Node backend is running.";
+      const errorMsg = `Unable to connect to AI server at ${API_BASE_URL}. Ensure the backend is running.`;
       setMessages(prev => [...prev, { role: "ai", text: `⚠️ ${errorMsg}` }]);
       toast.error(errorMsg);
     } finally {
@@ -1319,7 +1320,7 @@ function ServicesView({ selectedService, setSelectedService, mounted }: { select
   const fetchFarms = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/farms");
+      const res = await fetch(`${API_BASE_URL}/api/farms`);
       if (res.ok) {
         const data = await res.json();
         if (data.farms && Array.isArray(data.farms)) {
@@ -1395,7 +1396,7 @@ function ServicesView({ selectedService, setSelectedService, mounted }: { select
     if (editingFarm) {
       // EDIT existing farm
       try {
-        await fetch(`http://localhost:5000/api/farms/${editingFarm.id}`, {
+        await fetch(`${API_BASE_URL}/api/farms/${editingFarm.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
@@ -1418,7 +1419,7 @@ function ServicesView({ selectedService, setSelectedService, mounted }: { select
       };
 
       try {
-        const res = await fetch("http://localhost:5000/api/farms", {
+        const res = await fetch(`${API_BASE_URL}/api/farms`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
@@ -1447,7 +1448,7 @@ function ServicesView({ selectedService, setSelectedService, mounted }: { select
     }
 
     try {
-      await fetch(`http://localhost:5000/api/farms/${farm.id}`, { method: "DELETE" });
+      await fetch(`${API_BASE_URL}/api/farms/${farm.id}`, { method: "DELETE" });
     } catch (err) {
       console.warn("Backend delete failed, removing locally:", err);
     }
@@ -1924,7 +1925,7 @@ function RealCropAdvisoryView() {
     setAdviceResult(null);
 
     try {
-      const res = await fetch("http://localhost:5000/api/crop-advice", {
+      const res = await fetch(`${API_BASE_URL}/api/crop-advice`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -2210,7 +2211,7 @@ function RealMandiPricesView({ mounted }: { mounted: boolean }) {
     setError(null);
 
     try {
-      let url = `http://localhost:5000/api/mandi-prices?limit=${limit}&offset=${offset}`;
+      let url = `${API_BASE_URL}/api/mandi-prices?limit=${limit}&offset=${offset}`;
       if (state && state !== "All States" && state !== "all") {
         url += `&state=${encodeURIComponent(state)}`;
       }
@@ -2535,7 +2536,7 @@ function RealGovSchemesView() {
     setLoading(true);
     setError(null);
     try {
-      let url = `http://localhost:5000/api/gov-schemes?category=${encodeURIComponent(category)}&state=${encodeURIComponent(state)}&crop=${encodeURIComponent(crop)}`;
+      let url = `${API_BASE_URL}/api/gov-schemes?category=${encodeURIComponent(category)}&state=${encodeURIComponent(state)}&crop=${encodeURIComponent(crop)}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -2785,7 +2786,7 @@ function RealCropInsuranceView() {
   const fetchInsurance = async () => {
     setLoading(true);
     try {
-      const url = `http://localhost:5000/api/crop-insurance?state=${encodeURIComponent(state)}&crop=${encodeURIComponent(crop)}`;
+      const url = `${API_BASE_URL}/api/crop-insurance?state=${encodeURIComponent(state)}&crop=${encodeURIComponent(crop)}`;
       const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
@@ -2806,7 +2807,7 @@ function RealCropInsuranceView() {
     e.preventDefault();
     setCalcLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/crop-insurance/calculate", {
+      const res = await fetch(`${API_BASE_URL}/api/crop-insurance/calculate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
