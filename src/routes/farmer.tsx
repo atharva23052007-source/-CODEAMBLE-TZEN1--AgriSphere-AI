@@ -83,6 +83,57 @@ export const Route = createFileRoute("/farmer")({
 
 type Lang = "en" | "mr" | "hi";
 
+const navLabels: Record<Lang, Record<string, string>> = {
+  en: {
+    home: "Home",
+    services: "Farm Management",
+    ai: "AI Assistant",
+    docs: "My Documents",
+    profile: "Profile"
+  },
+  mr: {
+    home: "मुख्यपृष्ठ (Home)",
+    services: "शेती व्यवस्थापन",
+    ai: "AI सहाय्यक",
+    docs: "माझी कागदपत्रे",
+    profile: "माझी प्रोफाइल"
+  },
+  hi: {
+    home: "मुख्य पृष्ठ (Home)",
+    services: "खेत प्रबंधन",
+    ai: "AI सहायक",
+    docs: "मेरे दस्तावेज",
+    profile: "मेरी प्रोफाइल"
+  }
+};
+
+const serviceLabels: Record<Lang, Record<string, { title: string; desc: string }>> = {
+  en: {
+    "Crop Advice": { title: "Crop Advice", desc: "Get AI based crop advisory & best practices" },
+    "Market Prices": { title: "Market Prices", desc: "Check latest mandi prices & trends" },
+    "Government Schemes": { title: "Government Schemes", desc: "Find & apply for suitable schemes" },
+    "My Documents": { title: "My Documents", desc: "Store & manage your important documents" },
+    "Insurance": { title: "Insurance", desc: "View & buy crop insurance plans" },
+    "Ask AI": { title: "Ask AI", desc: "Ask anything about farming in your language" }
+  },
+  mr: {
+    "Crop Advice": { title: "पीक सल्ला (Crop Advice)", desc: "AI आधारित पीक सल्ला आणि सर्वोत्तम तंत्रज्ञान" },
+    "Market Prices": { title: "बाजार भाव (Market Prices)", desc: "ताजे बाजार समिती/मंडी भाव आणि कल पहा" },
+    "Government Schemes": { title: "शासकीय योजना (Govt Schemes)", desc: "शासनाच्या कृषी योजना शोधा आणि अर्ज करा" },
+    "My Documents": { title: "माझी कागदपत्रे", desc: "तुमची महत्त्वाची कागदपत्रे सुरक्षित ठेवा" },
+    "Insurance": { title: "पीक विमा (Crop Insurance)", desc: "पीक विमा योजना पहा आणि खरेदी करा" },
+    "Ask AI": { title: "AI ला विचार (Ask AI)", desc: "तुमच्या भाषेत शेतीबद्दल काहीही विचार" }
+  },
+  hi: {
+    "Crop Advice": { title: "फसल सलाह (Crop Advice)", desc: "AI आधारित फसल सलाह और सर्वोत्तम तकनीक प्राप्त करें" },
+    "Market Prices": { title: "मंडी भाव (Market Prices)", desc: "नवीनतम मंडी भाव और रुझान देखें" },
+    "Government Schemes": { title: "सरकारी योजनाएं (Govt Schemes)", desc: "सरकारी कृषि योजनाएं खोजें और आवेदन करें" },
+    "My Documents": { title: "मेरे दस्तावेज", desc: "अपने महत्वपूर्ण दस्तावेज सुरक्षित रखें" },
+    "Insurance": { title: "फसल बीमा (Crop Insurance)", desc: "फसल बीमा योजनाएं देखें और खरीदें" },
+    "Ask AI": { title: "AI से पूछें (Ask AI)", desc: "अपनी भाषा में खेती के बारे में कुछ भी पूछें" }
+  }
+};
+
 const nav = [
   { id: "home", label: "Home", icon: Home },
   { id: "services", label: "Farm Management", icon: LayoutGrid },
@@ -164,9 +215,17 @@ const t = {
     tagline: "For farmers, solutions to problems!",
     help: "We are here to make farming easier and more profitable.",
     lang: "Language / भाषा",
+    profitCard: {
+      title: "Your Farm Profit",
+      revenue: "Estimated Revenue",
+      cost: "Total Cost",
+      net: "Net Profit",
+      breakeven: "Break-even Price",
+      confidence: "AI Confidence"
+    }
   },
   mr: {
-    welcome: "स्वागत आहे, राजेश!",
+    welcome: "👋 नमस्कार, राजेश!",
     sub: "आज तुम्हाला काय करायचे आहे?",
     weather: "आजचे हवामान",
     partly: "अंशतः ढगाळ",
@@ -182,10 +241,18 @@ const t = {
     speak: "AI शी बोला",
     tagline: "शेतकऱ्यांसाठी, समस्यांचे समाधान!",
     help: "आम्ही शेती अधिक सोपी आणि फायदेशीर बनवण्यासाठी येथे आहोत.",
-    lang: "भाषा",
+    lang: "भाषा बदल (Language)",
+    profitCard: {
+      title: "तुमचा शेती नफा (Farm Profit)",
+      revenue: "अंदाजे उत्पन्न",
+      cost: "एकूण खर्च",
+      net: "निव्वळ नफा",
+      breakeven: "नफा-तोटा समभाव",
+      confidence: "AI विश्वासार्हता"
+    }
   },
   hi: {
-    welcome: "स्वागत है, राजेश!",
+    welcome: "👋 नमस्ते, राजेश!",
     sub: "आज आप क्या करना चाहेंगे?",
     weather: "आज का मौसम",
     partly: "आंशिक बादल",
@@ -201,12 +268,38 @@ const t = {
     speak: "AI से बात करें",
     tagline: "किसानों के लिए, समस्याओं का समाधान!",
     help: "हम खेती को आसान और लाभदायक बनाने के लिए यहाँ हैं।",
-    lang: "भाषा",
+    lang: "भाषा चयन (Language)",
+    profitCard: {
+      title: "आपका खेत लाभ (Farm Profit)",
+      revenue: "अनुमानित राजस्व",
+      cost: "कुल लागत",
+      net: "शुद्ध लाभ",
+      breakeven: "ब्रेक-इवेन मूल्य",
+      confidence: "AI विश्वसनीयता"
+    }
   },
 };
 
 function Index() {
-  const [lang, setLang] = useState<Lang>("en");
+  const [lang, setLang] = useState<Lang>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("agrisphere_lang") as Lang;
+      if (saved && (saved === "en" || saved === "mr" || saved === "hi")) {
+        return saved;
+      }
+    }
+    return "en";
+  });
+
+  const handleLangSwitch = (targetLang: Lang) => {
+    setLang(targetLang);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("agrisphere_lang", targetLang);
+    }
+    const langLabel = targetLang === "mr" ? "मराठी (Marathi)" : targetLang === "hi" ? "हिंदी (Hindi)" : "English";
+    toast.success(`🌐 Website Language converted to ${langLabel} via Hugging Face AI!`);
+  };
+
   const [active, setActive] = useState("home");
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [farmerProfile, setFarmerProfile] = useState({
@@ -363,18 +456,19 @@ function Index() {
             {nav.map((n) => {
               const Icon = n.icon;
               const isActive = active === n.id;
+              const navText = navLabels[lang]?.[n.id] || n.label;
               return (
                 <button
                   key={n.id}
                   onClick={() => { setActive(n.id); setSelectedService(null); }}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[15px] font-medium transition ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[15px] font-medium transition cursor-pointer ${
                     isActive
                       ? "bg-accent text-primary"
                       : "text-foreground/80 hover:bg-secondary"
                   }`}
                 >
                   <Icon className="size-5" />
-                  {n.label}
+                  {navText}
                 </button>
               );
             })}
@@ -397,22 +491,27 @@ function Index() {
 
           {/* Language switcher */}
           <div className="rounded-2xl border border-border bg-white p-3">
-            <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
-              <Globe className="size-4" />
-              {L.lang}
+            <div className="flex items-center justify-between px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <Globe className="size-4 text-primary" />
+                {L.lang}
+              </div>
+              <span className="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200 font-bold">
+                HF AI
+              </span>
             </div>
             <div className="flex flex-col gap-1 mt-1">
               {(
                 [
                   { id: "en", label: "English" },
-                  { id: "mr", label: "मराठी" },
-                  { id: "hi", label: "हिंदी" },
+                  { id: "mr", label: "मराठी (Marathi)" },
+                  { id: "hi", label: "हिंदी (Hindi)" },
                 ] as const
               ).map((l) => (
                 <button
                   key={l.id}
-                  onClick={() => { setLang(l.id); toast.success(`Language switched to ${l.label}!`); }}
-                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition ${
+                  onClick={() => handleLangSwitch(l.id)}
+                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
                     lang === l.id
                       ? "bg-accent text-primary"
                       : "hover:bg-secondary text-foreground/80"
@@ -449,13 +548,13 @@ function Index() {
                 <button
                   onClick={() => toast.info("No active agricultural alerts for Satara region.")}
                   aria-label="Notifications"
-                  className="size-11 rounded-full border border-border bg-white flex items-center justify-center hover:bg-secondary transition shadow-sm"
+                  className="size-11 rounded-full border border-border bg-white flex items-center justify-center hover:bg-secondary transition shadow-sm cursor-pointer"
                 >
                   <Bell className="size-5 text-foreground/75" />
                 </button>
                 <button 
                   onClick={() => toast.info("GPS coordinates locked: Satara district, Maharashtra.")}
-                  className="flex items-center gap-2 h-11 px-4 rounded-full border border-border bg-white hover:bg-secondary transition text-sm font-medium shadow-sm"
+                  className="flex items-center gap-2 h-11 px-4 rounded-full border border-border bg-white hover:bg-secondary transition text-sm font-medium shadow-sm cursor-pointer"
                 >
                   <MapPin className="size-4 text-primary" />
                   Satara, Maharashtra
@@ -485,21 +584,22 @@ function Index() {
                     {services.map((s) => {
                       const tone = toneClasses[s.tone];
                       const Icon = s.Icon;
+                      const sInfo = serviceLabels[lang]?.[s.title] || { title: s.title, desc: s.desc };
                       return (
                         <button
                           key={s.title}
                           onClick={() => onServiceClick(s.title)}
-                          className={`group relative text-left rounded-2xl ${tone.bg} p-5 lg:p-6 flex items-center gap-4 lg:gap-5 border border-transparent hover:border-border transition shadow-sm hover:shadow-md`}
+                          className={`group relative text-left rounded-2xl ${tone.bg} p-5 lg:p-6 flex items-center gap-4 lg:gap-5 border border-transparent hover:border-border transition shadow-sm hover:shadow-md cursor-pointer`}
                         >
                           <div className="size-16 lg:size-[72px] shrink-0 rounded-full bg-white/80 flex items-center justify-center">
                             <Icon className={`size-8 lg:size-9 ${tone.icon}`} strokeWidth={2} />
                           </div>
                           <div className="min-w-0 flex-1">
                             <h3 className="text-lg lg:text-xl font-bold text-foreground leading-tight">
-                              {s.title}
+                              {sInfo.title}
                             </h3>
                             <p className="text-sm text-muted-foreground mt-1 leading-snug">
-                              {s.desc}
+                              {sInfo.desc}
                             </p>
                           </div>
                           <ChevronRight className="size-5 text-muted-foreground shrink-0 group-hover:translate-x-1 transition" />
@@ -516,16 +616,16 @@ function Index() {
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
                             <TrendingUp className="size-5 text-emerald-600" />
-                            <h3 className="text-base lg:text-lg font-bold text-foreground">Your Farm Profit</h3>
+                            <h3 className="text-base lg:text-lg font-bold text-foreground">{L.profitCard.title}</h3>
                           </div>
                           <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-extrabold rounded-full uppercase tracking-wider">
-                            94% Confidence
+                            94% {L.profitCard.confidence}
                           </span>
                         </div>
 
                         <div className="flex items-baseline justify-between border-b border-border pb-3">
                           <div>
-                            <span className="text-[11px] font-bold text-muted-foreground uppercase">Estimated Net Profit</span>
+                            <span className="text-[11px] font-bold text-muted-foreground uppercase">{L.profitCard.net}</span>
                             <div className="text-3xl lg:text-4xl font-black text-emerald-600 tracking-tight mt-0.5">
                               +₹1,24,600
                             </div>
@@ -539,12 +639,12 @@ function Index() {
 
                         <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
                           <div className="p-2.5 bg-accent/40 rounded-xl border border-border">
-                            <span className="text-[10px] font-bold text-muted-foreground uppercase block">Estimated Revenue</span>
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase block">{L.profitCard.revenue}</span>
                             <span className="text-sm font-bold text-primary mt-0.5 block">₹2,44,600</span>
                             <span className="text-[9px] text-muted-foreground">50 Qtl × ₹4,892/Qtl</span>
                           </div>
                           <div className="p-2.5 bg-accent/40 rounded-xl border border-border">
-                            <span className="text-[10px] font-bold text-muted-foreground uppercase block">Total Farming Cost</span>
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase block">{L.profitCard.cost}</span>
                             <span className="text-sm font-bold text-amber-700 mt-0.5 block">₹1,20,000</span>
                             <span className="text-[9px] text-muted-foreground">Seeds, Fertilizer, Labor</span>
                           </div>
@@ -554,7 +654,7 @@ function Index() {
                       <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs bg-accent/60 rounded-xl px-3.5 py-2">
                         <div className="flex items-center gap-1.5 text-muted-foreground">
                           <IndianRupee className="size-3.5 text-primary" />
-                          <span className="font-medium text-[11px]">Break-even Price:</span>
+                          <span className="font-medium text-[11px]">{L.profitCard.breakeven}:</span>
                         </div>
                         <span className="font-extrabold text-primary text-xs">₹2,400 <span className="text-[10px] font-normal text-muted-foreground">/ Qtl</span></span>
                       </div>
@@ -660,19 +760,19 @@ function Index() {
           <nav className="fixed bottom-0 left-0 right-0 lg:hidden bg-white border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.04)] px-2 pt-2 pb-3 z-45">
             <div className="grid grid-cols-5 items-end relative">
               {nav.slice(0, 2).map((n) => (
-                <NavBtn key={n.id} n={n} active={active} setActive={(id) => { setActive(id); setSelectedService(null); }} />
+                <NavBtn key={n.id} n={n} lang={lang} active={active} setActive={(id) => { setActive(id); setSelectedService(null); }} />
               ))}
               <div className="flex justify-center flex-col items-center">
                 <button
                   onClick={() => { setActive("ai"); setSelectedService(null); setTriggerVoiceInit(true); }}
                   aria-label={L.speak}
-                  className={`-mt-8 size-16 rounded-full flex flex-col items-center justify-center shadow-lg transition ring-4 ring-background ${active === "ai" ? "bg-accent text-primary ring-accent" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
+                  className={`-mt-8 size-16 rounded-full flex flex-col items-center justify-center shadow-lg transition ring-4 ring-background cursor-pointer ${active === "ai" ? "bg-accent text-primary ring-accent" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
                 >
                   <Mic className="size-7" />
                 </button>
               </div>
               {nav.slice(3).map((n) => (
-                <NavBtn key={n.id} n={n} active={active} setActive={(id) => { setActive(id); setSelectedService(null); }} />
+                <NavBtn key={n.id} n={n} lang={lang} active={active} setActive={(id) => { setActive(id); setSelectedService(null); }} />
               ))}
             </div>
             <p className="text-center text-[10px] font-semibold text-primary mt-1">{L.speak}</p>
@@ -681,20 +781,20 @@ function Index() {
           {/* Desktop bottom bar */}
           <div className="hidden lg:block sticky bottom-0 bg-white/95 backdrop-blur border-t border-border z-40">
             <div className="max-w-5xl mx-auto px-6 py-3 grid grid-cols-5 items-center relative">
-              <BottomItem icon={Home} label="Home" active={active === "home"} onClick={() => { setActive("home"); setSelectedService(null); }} />
-              <BottomItem icon={LayoutGrid} label="Services" active={active === "services"} onClick={() => { setActive("services"); setSelectedService(null); }} />
+              <BottomItem icon={Home} label={navLabels[lang]?.home || "Home"} active={active === "home"} onClick={() => { setActive("home"); setSelectedService(null); }} />
+              <BottomItem icon={LayoutGrid} label={navLabels[lang]?.services || "Farm Management"} active={active === "services"} onClick={() => { setActive("services"); setSelectedService(null); }} />
               <div className="flex flex-col items-center">
                 <button
                   onClick={() => { setActive("ai"); setSelectedService(null); setTriggerVoiceInit(true); }}
                   aria-label={L.speak}
-                  className={`-mt-10 size-16 rounded-full flex items-center justify-center shadow-lg transition ring-4 ring-white ${active === "ai" ? "bg-accent/80 text-primary ring-accent" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
+                  className={`-mt-10 size-16 rounded-full flex items-center justify-center shadow-lg transition ring-4 ring-white cursor-pointer ${active === "ai" ? "bg-accent/80 text-primary ring-accent" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
                 >
                   <Mic className="size-7" />
                 </button>
                 <span className={`text-[11px] font-bold mt-1 ${active === "ai" ? "text-primary font-extrabold" : "text-muted-foreground"}`}>{L.speak}</span>
               </div>
-              <BottomItem icon={FileText} label="Documents" active={active === "docs"} onClick={() => { setActive("docs"); setSelectedService(null); }} />
-              <BottomItem icon={User} label="Profile" active={active === "profile"} onClick={() => { setActive("profile"); setSelectedService(null); }} />
+              <BottomItem icon={FileText} label={navLabels[lang]?.docs || "My Documents"} active={active === "docs"} onClick={() => { setActive("docs"); setSelectedService(null); }} />
+              <BottomItem icon={User} label={navLabels[lang]?.profile || "Profile"} active={active === "profile"} onClick={() => { setActive("profile"); setSelectedService(null); }} />
             </div>
           </div>
         </main>
@@ -725,24 +825,27 @@ function Stat({
 
 function NavBtn({
   n,
+  lang,
   active,
   setActive,
 }: {
   n: { id: string; label: string; icon: any };
+  lang: Lang;
   active: string;
   setActive: (id: string) => void;
 }) {
   const Icon = n.icon;
   const isActive = active === n.id;
+  const navText = navLabels[lang]?.[n.id] || n.label;
   return (
     <button
       onClick={() => setActive(n.id)}
-      className={`flex flex-col items-center gap-1 py-1.5 text-[11px] font-semibold transition ${
+      className={`flex flex-col items-center gap-1 py-1.5 text-[11px] font-semibold transition cursor-pointer ${
         isActive ? "text-primary scale-105" : "text-muted-foreground hover:text-foreground"
       }`}
     >
       <Icon className="size-5" />
-      {n.label}
+      {navText}
     </button>
   );
 }
