@@ -410,22 +410,21 @@ function Index() {
   }, [active, selectedService]);
 
   const onServiceClick = (title: string) => {
+    setActive("home");
     if (title === "Crop Advice") {
-      setActive("services");
       setSelectedService("crop-advice");
     } else if (title === "Market Prices") {
-      setActive("services");
       setSelectedService("market-prices");
     } else if (title === "Government Schemes") {
-      setActive("services");
       setSelectedService("gov-schemes");
     } else if (title === "My Documents") {
       setActive("docs");
+      setSelectedService(null);
     } else if (title === "Insurance") {
-      setActive("services");
       setSelectedService("insurance");
     } else if (title === "Ask AI") {
       setActive("ai");
+      setSelectedService(null);
     }
   };
 
@@ -579,162 +578,181 @@ function Index() {
             <div className="flex-1 flex flex-col w-full">
               {active === "home" && (
                 <div className="flex-1 flex flex-col gap-6 lg:gap-8 animate-fade-in">
-                  {/* Service grid */}
-                  <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5">
-                    {services.map((s) => {
-                      const tone = toneClasses[s.tone];
-                      const Icon = s.Icon;
-                      const sInfo = serviceLabels[lang]?.[s.title] || { title: s.title, desc: s.desc };
-                      return (
-                        <button
-                          key={s.title}
-                          onClick={() => onServiceClick(s.title)}
-                          className={`group relative text-left rounded-2xl ${tone.bg} p-5 lg:p-6 flex items-center gap-4 lg:gap-5 border border-transparent hover:border-border transition shadow-sm hover:shadow-md cursor-pointer`}
-                        >
-                          <div className="size-16 lg:size-[72px] shrink-0 rounded-full bg-white/80 flex items-center justify-center">
-                            <Icon className={`size-8 lg:size-9 ${tone.icon}`} strokeWidth={2} />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <h3 className="text-lg lg:text-xl font-bold text-foreground leading-tight">
-                              {sInfo.title}
-                            </h3>
-                            <p className="text-sm text-muted-foreground mt-1 leading-snug">
-                              {sInfo.desc}
-                            </p>
-                          </div>
-                          <ChevronRight className="size-5 text-muted-foreground shrink-0 group-hover:translate-x-1 transition" />
-                        </button>
-                      );
-                    })}
-                  </section>
+                  {selectedService ? (
+                    <div className="flex flex-col gap-4 w-full">
+                      <button
+                        onClick={() => setSelectedService(null)}
+                        className="flex items-center gap-1.5 text-xs text-primary font-bold mr-auto bg-accent hover:bg-accent/80 px-3.5 py-2 rounded-xl transition cursor-pointer shadow-sm border border-primary/20"
+                      >
+                        <ArrowLeft className="size-4" />
+                        {lang === "mr" ? "← मुख्यपृष्ठावर परत जा (Back to Home)" : lang === "hi" ? "← मुख्य पृष्ठ पर वापस जाएँ (Back to Home)" : "← Back to Home"}
+                      </button>
 
-                  {/* Info row */}
-                  <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-5">
-                    {/* Your Farm Profit */}
-                    <div className="rounded-2xl bg-card border border-border p-5 lg:p-6 shadow-sm flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <TrendingUp className="size-5 text-emerald-600" />
-                            <h3 className="text-base lg:text-lg font-bold text-foreground">{L.profitCard.title}</h3>
-                          </div>
-                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-extrabold rounded-full uppercase tracking-wider">
-                            94% {L.profitCard.confidence}
-                          </span>
-                        </div>
+                      {selectedService === "crop-advice" && <RealCropAdvisoryView />}
+                      {selectedService === "market-prices" && <RealMandiPricesView mounted={mounted} />}
+                      {selectedService === "gov-schemes" && <RealGovSchemesView />}
+                      {selectedService === "insurance" && <RealCropInsuranceView />}
+                    </div>
+                  ) : (
+                    <>
+                      {/* Service grid */}
+                      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5">
+                        {services.map((s) => {
+                          const tone = toneClasses[s.tone];
+                          const Icon = s.Icon;
+                          const sInfo = serviceLabels[lang]?.[s.title] || { title: s.title, desc: s.desc };
+                          return (
+                            <button
+                              key={s.title}
+                              onClick={() => onServiceClick(s.title)}
+                              className={`group relative text-left rounded-2xl ${tone.bg} p-5 lg:p-6 flex items-center gap-4 lg:gap-5 border border-transparent hover:border-border transition shadow-sm hover:shadow-md cursor-pointer`}
+                            >
+                              <div className="size-16 lg:size-[72px] shrink-0 rounded-full bg-white/80 flex items-center justify-center">
+                                <Icon className={`size-8 lg:size-9 ${tone.icon}`} strokeWidth={2} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <h3 className="text-lg lg:text-xl font-bold text-foreground leading-tight">
+                                  {sInfo.title}
+                                </h3>
+                                <p className="text-sm text-muted-foreground mt-1 leading-snug">
+                                  {sInfo.desc}
+                                </p>
+                              </div>
+                              <ChevronRight className="size-5 text-muted-foreground shrink-0 group-hover:translate-x-1 transition" />
+                            </button>
+                          );
+                        })}
+                      </section>
 
-                        <div className="flex items-baseline justify-between border-b border-border pb-3">
+                      {/* Info row */}
+                      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-5">
+                        {/* Your Farm Profit */}
+                        <div className="rounded-2xl bg-card border border-border p-5 lg:p-6 shadow-sm flex flex-col justify-between">
                           <div>
-                            <span className="text-[11px] font-bold text-muted-foreground uppercase">{L.profitCard.net}</span>
-                            <div className="text-3xl lg:text-4xl font-black text-emerald-600 tracking-tight mt-0.5">
-                              +₹1,24,600
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <TrendingUp className="size-5 text-emerald-600" />
+                                <h3 className="text-base lg:text-lg font-bold text-foreground">{L.profitCard.title}</h3>
+                              </div>
+                              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-extrabold rounded-full uppercase tracking-wider">
+                                94% {L.profitCard.confidence}
+                              </span>
+                            </div>
+
+                            <div className="flex items-baseline justify-between border-b border-border pb-3">
+                              <div>
+                                <span className="text-[11px] font-bold text-muted-foreground uppercase">{L.profitCard.net}</span>
+                                <div className="text-3xl lg:text-4xl font-black text-emerald-600 tracking-tight mt-0.5">
+                                  +₹1,24,600
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                  +52.3% ROI
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                              <div className="p-2.5 bg-accent/40 rounded-xl border border-border">
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase block">{L.profitCard.revenue}</span>
+                                <span className="text-sm font-bold text-primary mt-0.5 block">₹2,44,600</span>
+                                <span className="text-[9px] text-muted-foreground">50 Qtl × ₹4,892/Qtl</span>
+                              </div>
+                              <div className="p-2.5 bg-accent/40 rounded-xl border border-border">
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase block">{L.profitCard.cost}</span>
+                                <span className="text-sm font-bold text-amber-700 mt-0.5 block">₹1,20,000</span>
+                                <span className="text-[9px] text-muted-foreground">Seeds, Fertilizer, Labor</span>
+                              </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                              +52.3% ROI
-                            </span>
+
+                          <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs bg-accent/60 rounded-xl px-3.5 py-2">
+                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                              <IndianRupee className="size-3.5 text-primary" />
+                              <span className="font-medium text-[11px]">{L.profitCard.breakeven}:</span>
+                            </div>
+                            <span className="font-extrabold text-primary text-xs">₹2,400 <span className="text-[10px] font-normal text-muted-foreground">/ Qtl</span></span>
                           </div>
                         </div>
 
-                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                          <div className="p-2.5 bg-accent/40 rounded-xl border border-border">
-                            <span className="text-[10px] font-bold text-muted-foreground uppercase block">{L.profitCard.revenue}</span>
-                            <span className="text-sm font-bold text-primary mt-0.5 block">₹2,44,600</span>
-                            <span className="text-[9px] text-muted-foreground">50 Qtl × ₹4,892/Qtl</span>
+                        {/* Crop Price */}
+                        <div className="rounded-2xl bg-card border border-border p-5 lg:p-6 shadow-sm">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-base lg:text-lg font-semibold">{L.price}</h3>
+                            <button onClick={() => { setActive("home"); setSelectedService("market-prices"); }} className="text-sm text-primary font-semibold hover:underline cursor-pointer">
+                              {L.viewAll}
+                            </button>
                           </div>
-                          <div className="p-2.5 bg-accent/40 rounded-xl border border-border">
-                            <span className="text-[10px] font-bold text-muted-foreground uppercase block">{L.profitCard.cost}</span>
-                            <span className="text-sm font-bold text-amber-700 mt-0.5 block">₹1,20,000</span>
-                            <span className="text-[9px] text-muted-foreground">Seeds, Fertilizer, Labor</span>
+                          <div className="flex items-center gap-4">
+                            <div className="size-16 rounded-xl bg-tile-green overflow-hidden flex items-center justify-center">
+                              <img src={soybeanImg} alt="Soybean" className="size-full object-cover" loading="lazy" width={512} height={512} />
+                            </div>
+                            <div>
+                              <div className="text-lg font-bold">Soybean</div>
+                              <div className="text-sm text-muted-foreground">Latur Mandi</div>
+                            </div>
                           </div>
+
+                          <div className="mt-4 flex items-center justify-between bg-accent/60 rounded-xl px-4 py-3">
+                            <div className="text-xl lg:text-2xl font-extrabold text-primary">
+                              ₹4,892 <span className="text-sm font-medium text-muted-foreground">/ क्विंटल</span>
+                            </div>
+                            <div className="text-sm font-semibold text-primary">↑ 2.4%</div>
+                          </div>
+
+                          <p className="text-xs text-muted-foreground mt-4 flex items-center gap-1.5">
+                            <span className="inline-block size-1.5 rounded-full bg-primary" />
+                            {L.updated}
+                          </p>
                         </div>
-                      </div>
 
-                      <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs bg-accent/60 rounded-xl px-3.5 py-2">
-                        <div className="flex items-center gap-1.5 text-muted-foreground">
-                          <IndianRupee className="size-3.5 text-primary" />
-                          <span className="font-medium text-[11px]">{L.profitCard.breakeven}:</span>
+                        {/* AI Reco */}
+                        <div className="rounded-2xl bg-card border border-border p-5 lg:p-6 shadow-sm">
+                          <div className="flex items-center mb-4 justify-between w-full">
+                            <div className="flex items-center gap-2">
+                              <Sparkles className="size-5 text-primary" />
+                              <h3 className="text-base lg:text-lg font-semibold">{L.reco}</h3>
+                            </div>
+                            <button 
+                              onClick={() => handleSpeak(lang === "en" ? "mr" : lang)} 
+                              title="Speak Recommendation" 
+                              className="hover:scale-110 active:scale-95 transition size-9 rounded-full bg-secondary flex items-center justify-center border border-border cursor-pointer"
+                            >
+                              <Volume2 className={`size-4.5 ${isSpeaking ? "text-primary animate-pulse" : "text-foreground/70"}`} />
+                            </button>
+                          </div>
+
+                          <div className="rounded-xl bg-accent/60 p-4">
+                            <p className="text-[15px] leading-relaxed text-foreground font-semibold">
+                              {recommendation[lang]}
+                            </p>
+
+                            <button 
+                              onClick={() => handleSpeak(lang === "en" ? "mr" : lang)}
+                              className={`mt-4 w-full h-12 rounded-xl font-semibold flex items-center justify-center gap-2 transition shadow-sm cursor-pointer ${isSpeaking ? "bg-red-600 hover:bg-red-700 text-white animate-pulse" : "bg-primary text-primary-foreground hover:bg-primary/95"}`}
+                            >
+                              {isSpeaking ? (
+                                <>
+                                  <Volume2 className="size-5 animate-pulse" />
+                                  Stop Listening
+                                </>
+                              ) : (
+                                <>
+                                  <Headphones className="size-5" />
+                                  {lang === "mr" ? "ऐका (Listen)" : lang === "hi" ? "सुनें (Listen)" : "🔊 Listen in Marathi"}
+                                </>
+                              )}
+                            </button>
+                          </div>
+
+                          <button onClick={() => { setActive("home"); setSelectedService("crop-advice"); }} className="mt-4 w-full text-sm text-primary font-medium hover:underline text-center cursor-pointer">
+                            {L.viewReco}
+                          </button>
                         </div>
-                        <span className="font-extrabold text-primary text-xs">₹2,400 <span className="text-[10px] font-normal text-muted-foreground">/ Qtl</span></span>
-                      </div>
-                    </div>
-
-                    {/* Crop Price */}
-                    <div className="rounded-2xl bg-card border border-border p-5 lg:p-6 shadow-sm">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-base lg:text-lg font-semibold">{L.price}</h3>
-                        <button onClick={() => { setActive("services"); setSelectedService("market-prices"); }} className="text-sm text-primary font-semibold hover:underline">
-                          {L.viewAll}
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="size-16 rounded-xl bg-tile-green overflow-hidden flex items-center justify-center">
-                          <img src={soybeanImg} alt="Soybean" className="size-full object-cover" loading="lazy" width={512} height={512} />
-                        </div>
-                        <div>
-                          <div className="text-lg font-bold">Soybean</div>
-                          <div className="text-sm text-muted-foreground">Latur Mandi</div>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 flex items-center justify-between bg-accent/60 rounded-xl px-4 py-3">
-                        <div className="text-xl lg:text-2xl font-extrabold text-primary">
-                          ₹4,892 <span className="text-sm font-medium text-muted-foreground">/ क्विंटल</span>
-                        </div>
-                        <div className="text-sm font-semibold text-primary">↑ 2.4%</div>
-                      </div>
-
-                      <p className="text-xs text-muted-foreground mt-4 flex items-center gap-1.5">
-                        <span className="inline-block size-1.5 rounded-full bg-primary" />
-                        {L.updated}
-                      </p>
-                    </div>
-
-                    {/* AI Reco */}
-                    <div className="rounded-2xl bg-card border border-border p-5 lg:p-6 shadow-sm">
-                      <div className="flex items-center mb-4 justify-between w-full">
-                        <div className="flex items-center gap-2">
-                          <Sparkles className="size-5 text-primary" />
-                          <h3 className="text-base lg:text-lg font-semibold">{L.reco}</h3>
-                        </div>
-                        <button 
-                          onClick={() => handleSpeak(lang === "en" ? "mr" : lang)} 
-                          title="Speak Recommendation" 
-                          className="hover:scale-110 active:scale-95 transition size-9 rounded-full bg-secondary flex items-center justify-center border border-border"
-                        >
-                          <Volume2 className={`size-4.5 ${isSpeaking ? "text-primary animate-pulse" : "text-foreground/70"}`} />
-                        </button>
-                      </div>
-
-                      <div className="rounded-xl bg-accent/60 p-4">
-                        <p className="text-[15px] leading-relaxed text-foreground font-semibold">
-                          {recommendation[lang]}
-                        </p>
-
-                        <button 
-                          onClick={() => handleSpeak(lang === "en" ? "mr" : lang)}
-                          className={`mt-4 w-full h-12 rounded-xl font-semibold flex items-center justify-center gap-2 transition shadow-sm ${isSpeaking ? "bg-red-600 hover:bg-red-700 text-white animate-pulse" : "bg-primary text-primary-foreground hover:bg-primary/95"}`}
-                        >
-                          {isSpeaking ? (
-                            <>
-                              <Volume2 className="size-5 animate-pulse" />
-                              Stop Listening
-                            </>
-                          ) : (
-                            <>
-                              <Headphones className="size-5" />
-                              {lang === "mr" ? "ऐका (Listen)" : lang === "hi" ? "सुनें (Listen)" : "🔊 Listen in Marathi"}
-                            </>
-                          )}
-                        </button>
-                      </div>
-
-                      <button onClick={() => { setActive("services"); setSelectedService("crop-advice"); }} className="mt-4 w-full text-sm text-primary font-medium hover:underline text-center">
-                        {L.viewReco}
-                      </button>
-                    </div>
-                  </section>
+                      </section>
+                    </>
+                  )}
                 </div>
               )}
 
